@@ -395,8 +395,6 @@ class BaseDataset(Dataset):
                                         frequency_maps=[frequency_maps[freq] for freq in self.frequencies],
                                         seq_length=self.seq_len,
                                         predict_last_n=self._predict_last_n)
-                # TOMMY: add flag for missing data
-                flag = 0 if np.isnan(y[freq]).any() else 1
 
             valid_samples = np.argwhere(flag == 1)
             for f in valid_samples:
