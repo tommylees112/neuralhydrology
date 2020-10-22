@@ -131,6 +131,7 @@ dynamic_inputs:
 - peti
 - temperature
 
+# static_inputs:
 camels_attributes:
 - area
 - elev_mean
