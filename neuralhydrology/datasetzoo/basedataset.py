@@ -395,6 +395,9 @@ class BaseDataset(Dataset):
                                         frequency_maps=[frequency_maps[freq] for freq in self.frequencies],
                                         seq_length=self.seq_len,
                                         predict_last_n=self._predict_last_n)
+                # TOMMY: add flag for missing data
+                flag = 0 if np.isnan(y[freq]).any() else 1
+
             valid_samples = np.argwhere(flag == 1)
             for f in valid_samples:
                 # store pointer to basin and the sample's index in each frequency
@@ -619,7 +622,6 @@ def validate_samples(x_d: List[np.ndarray], x_s: List[np.ndarray], y: List[np.nd
                 if np.prod(np.array(_y.shape)) > 0 and np.all(np.isnan(_y)):
                     flag[j] = 0
                     continue
-                assert False
 
             # any NaN in the static features makes the sample invalid
             if x_s is not None:
