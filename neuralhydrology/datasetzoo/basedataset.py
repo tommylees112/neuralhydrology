@@ -312,7 +312,7 @@ class BaseDataset(Dataset):
             if not self.frequencies:
                 native_frequency = utils.infer_frequency(xr["date"].values)
                 self.frequencies = [native_frequency]
-        assert False
+
         return xr
 
     def _save_xarray_dataset(self, xr: xarray.Dataset):
@@ -619,6 +619,7 @@ def validate_samples(x_d: List[np.ndarray], x_s: List[np.ndarray], y: List[np.nd
                 if np.prod(np.array(_y.shape)) > 0 and np.all(np.isnan(_y)):
                     flag[j] = 0
                     continue
+                assert False
 
             # any NaN in the static features makes the sample invalid
             if x_s is not None:
