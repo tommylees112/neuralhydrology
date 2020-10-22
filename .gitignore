@@ -13,7 +13,7 @@ neuralhydrology.egg-info/*
 .vscode/*
 .idea/*
 runs/
-configs/*
+# configs/*
 .ipynb_checkpoints/
-data/*
+# data/*
 docs/build/*
