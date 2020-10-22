@@ -1,7 +1,7 @@
 # --- Experiment configurations --------------------------------------------------------------------
 
 # experiment name, used as folder name
-experiment_name: lstm_all_vars_1998_2008
+experiment_name: lstm_all_vars_1998_2008_nh
 
 # place to store run directory (if empty runs are stored in code_dir/runs/)
 run_dir: /cats/datastore/data/runs/
