@@ -21,7 +21,7 @@ LOGGER = logging.getLogger(__name__)
 
 class BaseDataset(Dataset):
     """Base data set class to load and preprocess data.
-    
+
     Use subclasses of this class for training/evaluating a model on a specific data set. E.g. use `CamelsUS` for the US
     CAMELS data set and `CamelsGB` for the CAMELS GB data set.
 
@@ -29,11 +29,11 @@ class BaseDataset(Dataset):
     ----------
     cfg : Config
         The run configuration.
-    is_train : bool 
+    is_train : bool
         Defines if the dataset is used for training or evaluating. If True (training), means/stds for each feature
-        are computed and stored to the run directory. If one-hot encoding is used, the mapping for the one-hot encoding 
+        are computed and stored to the run directory. If one-hot encoding is used, the mapping for the one-hot encoding
         is created and also stored to disk. If False, a `scaler` input is expected and similarly the `id_to_int` input
-        if one-hot encoding is used. 
+        if one-hot encoding is used.
     period : {'train', 'validation', 'test'}
         Defines the period for which the data will be loaded
     basin : str, optional
@@ -41,13 +41,13 @@ class BaseDataset(Dataset):
         appropriate basin file, corresponding to the `period`.
     additional_features : List[Dict[str, pd.DataFrame]], optional
         List of dictionaries, mapping from a basin id to a pandas DataFrame. This DataFrame will be added to the data
-        loaded from the dataset and all columns are available as 'dynamic_inputs', 'static_inputs' and 
+        loaded from the dataset and all columns are available as 'dynamic_inputs', 'static_inputs' and
         'target_variables'
     id_to_int : Dict[str, int], optional
-        If the config argument 'use_basin_id_encoding' is True in the config and period is either 'validation' or 
+        If the config argument 'use_basin_id_encoding' is True in the config and period is either 'validation' or
         'test', this input is required. It is a dictionary, mapping from basin id to an integer (the one-hot encoding).
     scaler : Dict[str, Union[pd.Series, xarray.DataArray]], optional
-        If period is either 'validation' or 'test', this input is required. It contains the means and standard 
+        If period is either 'validation' or 'test', this input is required. It contains the means and standard
         deviations for each feature and is stored to the run directory during training (train_data/train_data_scaler.p)
     """
 
@@ -246,6 +246,8 @@ class BaseDataset(Dataset):
 
             if not self._disable_pbar:
                 LOGGER.info("Loading basin data into xarray data set.")
+
+            # FOR EACH BASIN
             for basin in tqdm(self.basins, disable=self._disable_pbar, file=sys.stdout):
                 df = self._load_basin_data(basin)
 
@@ -310,7 +312,7 @@ class BaseDataset(Dataset):
             if not self.frequencies:
                 native_frequency = utils.infer_frequency(xr["date"].values)
                 self.frequencies = [native_frequency]
-
+        assert False
         return xr
 
     def _save_xarray_dataset(self, xr: xarray.Dataset):
@@ -342,6 +344,7 @@ class BaseDataset(Dataset):
         lookup = []
         if not self._disable_pbar:
             LOGGER.info("Create lookup table and convert to pytorch tensor")
+
         for basin in tqdm(self.basins, file=sys.stdout, disable=self._disable_pbar):
 
             # store data of each frequency as numpy array of shape [time steps, features]
@@ -527,7 +530,7 @@ class BaseDataset(Dataset):
 
     def get_period_start(self, basin: str) -> pd.Timestamp:
         """Return the first date in the period for a given basin
-        
+
         Parameters
         ----------
         basin : str
@@ -587,7 +590,7 @@ def validate_samples(x_d: List[np.ndarray], x_s: List[np.ndarray], y: List[np.nd
 
     Returns
     -------
-    np.ndarray 
+    np.ndarray
         Array has a value of 1 for valid samples and a value of 0 for invalid samples.
     """
     # number of samples is number of lowest-frequency samples (all maps have this length)
