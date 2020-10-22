@@ -69,7 +69,7 @@ output_dropout: 0.4
 optimizer: Adam
 
 # specify loss [MSE, NSE, RMSE]
-loss: MSE
+loss: NSE
 
 # specify learning rates to use starting at specific epochs (0 is the initial learning rate)
 learning_rate:
@@ -81,7 +81,7 @@ learning_rate:
 batch_size: 256
 
 # Number of training epochs
-epochs: 15
+epochs: 30
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1
@@ -123,8 +123,8 @@ data_dir: /cats/datastore/data/CAMELS_GB_DATASET
 h5_file:
 scaler_file:
 
-# whether to load the entire data into memory or not (2x as much data if cache_validation: True)
-cache_validation_data: False
+# whether to load the entire data into memory or not
+cache_validation_data: True
 
 # Forcing product [daymet, maurer, maurer_extended, nldas, nldas_extended, nldas_hourly]
 # can be either a list of forcings or a single forcing product
@@ -171,6 +171,7 @@ camels_attributes:
 clip_target_to_zero:
 - discharge_spec
 
-zero_center_target: True
+# zero_center_target: True -- DEPRECEATED
+custom_normalization:
 
 use_basin_id_encoding: False

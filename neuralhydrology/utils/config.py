@@ -24,7 +24,7 @@ class Config(object):
 
     def as_dict(self) -> dict:
         """Return run configuration as dictionary.
-        
+
         Returns
         -------
         dict
@@ -80,12 +80,12 @@ class Config(object):
 
     def force_update(self, arguments: Dict[str, Any] = {}, key: str = None, value: Any = None):
         """Force update config arguments.
-        
-        If a dictionary is passed, all key-value pairs will be added to the config or overwrite existing config 
-        arguments. If a `key` is passed, the `value` input (by default None) will be used to add/overwrite a config 
-        argument. It is possible to pass both at the same time. Here, the order is first to update the arguments from 
+
+        If a dictionary is passed, all key-value pairs will be added to the config or overwrite existing config
+        arguments. If a `key` is passed, the `value` input (by default None) will be used to add/overwrite a config
+        argument. It is possible to pass both at the same time. Here, the order is first to update the arguments from
         the `arguments` dictionary and then the single `key`-`value` pair.
-        
+
         Parameters
         ----------
         arguments: Dict[str, Any], optional
@@ -103,10 +103,10 @@ class Config(object):
 
     def update_config(self, cfg_path: Path):
         """Update config arguments.
-        
+
         Useful e.g. in the context of fine-tuning or when continuing to train from a checkpoint to adapt for example the
         learning rate, train basin files or anything else.
-        
+
         Parameters
         ----------
         cfg_path : Path
@@ -648,10 +648,10 @@ class Config(object):
     @property
     def verbose(self) -> int:
         """Defines level of verbosity.
-        
+
         0: Only log info messages, don't show progress bars
         1: Log info messages and show progress bars
-        
+
         Returns
         -------
         int
