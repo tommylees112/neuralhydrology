@@ -70,7 +70,7 @@ output_dropout: 0.4
 optimizer: Adam
 
 # specify loss [MSE, NSE, RMSE]
-loss: MSE
+loss: NSE
 
 # specify learning rates to use starting at specific epochs (0 is the initial learning rate)
 learning_rate:
