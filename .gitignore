@@ -17,3 +17,4 @@ runs/
 .ipynb_checkpoints/
 # data/*
 docs/build/*
+.DS_Store
