@@ -1,7 +1,8 @@
 # --- Experiment configurations --------------------------------------------------------------------
+# https://stefanbauer.me/articles/how-to-keep-your-git-fork-up-to-date#:~:text=Merge%20the%20upstream%20with%20your,can%20just%20merge%20the%20changes.&text=With%20that%2C%20you%20merge%20the,and%20merging%20in%20one%20step.
 
 # experiment name, used as folder name
-experiment_name: lstm_all_vars_1998_2008
+experiment_name: lstm_all_vars_1998_2008_nh
 
 # place to store run directory (if empty runs are stored in code_dir/runs/)
 run_dir:
@@ -28,7 +29,7 @@ seed: 1234
 # --- Validation configuration ---------------------------------------------------------------------
 
 # specify after how many epochs to perform validation
-validate_every: 3
+validate_every: 5
 
 # specify how many random basins to use for validation
 validate_n_random_basins: 1
@@ -69,7 +70,7 @@ output_dropout: 0.4
 optimizer: Adam
 
 # specify loss [MSE, NSE, RMSE]
-loss: MSE
+loss: NSE
 
 # specify learning rates to use starting at specific epochs (0 is the initial learning rate)
 learning_rate:
@@ -81,7 +82,7 @@ learning_rate:
 batch_size: 256
 
 # Number of training epochs
-epochs: 15
+epochs: 10
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1
@@ -98,7 +99,7 @@ seq_length: 365
 num_workers: 8
 
 # Log the training loss every n steps
-log_interval: 5
+log_interval: 10
 
 # If true, writes logging results into tensorboard file
 log_tensorboard: True
@@ -123,8 +124,8 @@ data_dir: /soge-home/projects/crop_yield/CAMELS/CAMELS_GB_DATASET
 h5_file:
 scaler_file:
 
-# whether to load the entire data into memory or not (2x as much data if cache_validation: True)
-cache_validation_data: False
+# whether to load the entire data into memory or not
+cache_validation_data: True
 
 # Forcing product [daymet, maurer, maurer_extended, nldas, nldas_extended, nldas_hourly]
 # can be either a list of forcings or a single forcing product
@@ -171,6 +172,7 @@ camels_attributes:
 clip_target_to_zero:
 - discharge_spec
 
-zero_center_target: True
+# zero_center_target: True -- DEPRECEATED
+custom_normalization:
 
 use_basin_id_encoding: False

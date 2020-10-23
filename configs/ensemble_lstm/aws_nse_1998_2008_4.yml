@@ -2,7 +2,7 @@
 # https://stefanbauer.me/articles/how-to-keep-your-git-fork-up-to-date#:~:text=Merge%20the%20upstream%20with%20your,can%20just%20merge%20the%20changes.&text=With%20that%2C%20you%20merge%20the,and%20merging%20in%20one%20step.
 
 # experiment name, used as folder name
-experiment_name: ealstm_all_vars_1998_2008_nh
+experiment_name: lstm_ensemble4_nse_1998_2008
 
 # place to store run directory (if empty runs are stored in code_dir/runs/)
 run_dir: /cats/datastore/data/runs/
@@ -24,12 +24,12 @@ test_end_date: '31/12/2008'
 device: cuda:0
 
 # fixed seed, leave empty to use a random seed
-seed: 1234
+seed: 4
 
 # --- Validation configuration ---------------------------------------------------------------------
 
 # specify after how many epochs to perform validation
-validate_every: 5
+validate_every: 10
 
 # specify how many random basins to use for validation
 validate_n_random_basins: 1
@@ -45,7 +45,7 @@ metrics:
 
 # base model type [lstm, ealstm, cudalstm, embcudalstm, mtslstm]
 # (has to match the if statement in modelzoo/__init__.py)
-model: ealstm
+model: cudalstm
 
 # prediction head [regression]. Define the head specific parameters below
 head: regression
@@ -63,19 +63,6 @@ initial_forget_bias: 3
 
 # Dropout applied to the output of the LSTM
 output_dropout: 0.4
-
-# ----> Embedding network settings <----
-# define number of neurons per layer in the FC network used as embedding/shortcut network
-embedding_hiddens:
-- 30
-- 20
-- 64
-
-# activation function of embedding network
-embedding_activation: tanh
-
-# dropout applied to embedding network
-embedding_dropout: 0.2
 
 # --- Training configuration -----------------------------------------------------------------------
 
@@ -95,7 +82,7 @@ learning_rate:
 batch_size: 256
 
 # Number of training epochs
-epochs: 5
+epochs: 10
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1
