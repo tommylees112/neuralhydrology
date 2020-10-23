@@ -29,7 +29,7 @@ seed: 1234
 # --- Validation configuration ---------------------------------------------------------------------
 
 # specify after how many epochs to perform validation
-validate_every: 3
+validate_every: 5
 
 # specify how many random basins to use for validation
 validate_n_random_basins: 1
@@ -99,7 +99,7 @@ seq_length: 365
 num_workers: 8
 
 # Log the training loss every n steps
-log_interval: 5
+log_interval: 10
 
 # If true, writes logging results into tensorboard file
 log_tensorboard: True
