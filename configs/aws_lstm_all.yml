@@ -1,4 +1,5 @@
 # --- Experiment configurations --------------------------------------------------------------------
+# https://stefanbauer.me/articles/how-to-keep-your-git-fork-up-to-date#:~:text=Merge%20the%20upstream%20with%20your,can%20just%20merge%20the%20changes.&text=With%20that%2C%20you%20merge%20the,and%20merging%20in%20one%20step.
 
 # experiment name, used as folder name
 experiment_name: lstm_all_vars_1998_2008_nh
