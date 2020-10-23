@@ -5,7 +5,7 @@
 experiment_name: lstm_ensemble2_nse_1998_2008
 
 # place to store run directory (if empty runs are stored in code_dir/runs/)
-run_dir: /cats/datastore/data/runs/
+run_dir: /cats/datastore/data/runs/ensemble
 
 # files to specify training, validation and test basins (relative to code root or absolute path)
 train_basin_file: ./data/camels_gb_basin_list.txt
