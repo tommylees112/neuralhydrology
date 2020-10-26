@@ -165,6 +165,7 @@ class BaseDataset(Dataset):
             x_one_hot = self.one_hot.zero_()
             x_one_hot[self.id_to_int[basin_id]] = 1
             sample['x_one_hot'] = x_one_hot
+        assert False
 
         return sample
 
