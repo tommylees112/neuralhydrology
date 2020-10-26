@@ -29,7 +29,7 @@ seed: 2
 # --- Validation configuration ---------------------------------------------------------------------
 
 # specify after how many epochs to perform validation
-validate_every: 10
+validate_every: 30
 
 # specify how many random basins to use for validation
 validate_n_random_basins: 1
@@ -82,7 +82,7 @@ learning_rate:
 batch_size: 256
 
 # Number of training epochs
-epochs: 10
+epochs: 30
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1

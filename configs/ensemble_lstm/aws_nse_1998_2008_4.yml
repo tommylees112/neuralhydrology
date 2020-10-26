@@ -82,7 +82,7 @@ learning_rate:
 batch_size: 256
 
 # Number of training epochs
-epochs: 10
+epochs: 30
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1
