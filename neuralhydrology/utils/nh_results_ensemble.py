@@ -25,7 +25,7 @@ def create_results_ensemble(run_dirs: List[Path],
     """Average the predictions of several runs for the specified period and calculate new metrics.
 
     If `best_k` is provided, only the k runs with the best validation NSE will be used in the generated ensemble.
-    
+
     Parameters
     ----------
     run_dirs : List[Path]
@@ -35,11 +35,11 @@ def create_results_ensemble(run_dirs: List[Path],
     metrics : List[str], optional
         Use this parameter to override the metrics from the config files in the run directories.
     period : {'test', 'validation', 'train'}, optional
-        One of train, val, test. If best_k is used, only 'test' is allowed. 
+        One of train, val, test. If best_k is used, only 'test' is allowed.
         The run_directories must contain results files for the specified period.
     epoch : int, optional
         If provided, will ensemble the model predictions of this epoch otherwise of the last epoch
-    
+
     Returns
     -------
     dict
@@ -109,8 +109,9 @@ def _create_ensemble(results_files: List[Path], frequencies: List[str], config: 
 
             for target_var in target_vars:
                 # average predictions
-                ensemble[basin][freq]['xr'][
-                    f'{target_var}_sim'] = ensemble[basin][freq]['xr'][f'{target_var}_sim'] / len(results_files)
+                ensemble[basin][freq]['xr'][f'{target_var}_sim'] = (
+                    ensemble[basin][freq]['xr'][f'{target_var}_sim'] / len(results_files)
+                )
 
                 # clip predictions to zero
                 sim = ensemble[basin][freq]['xr'][f'{target_var}_sim']
@@ -118,16 +119,21 @@ def _create_ensemble(results_files: List[Path], frequencies: List[str], config: 
                     sim = xr.where(sim < 0, 0, sim)
 
                 # calculate metrics
-                ensemble_metrics = calculate_metrics(
-                    ensemble[basin][freq]['xr'][f'{target_var}_obs'],
-                    sim,
-                    metrics=config.metrics if isinstance(config.metrics, list) else config.metrics[target_var],
-                    resolution=freq)
-                # add variable identifier to metrics if needed
-                if len(target_vars) > 1:
-                    ensemble_metrics = {f'{target_var}_{key}': val for key, val in ensemble_metrics.items()}
-                for metric, val in ensemble_metrics.items():
-                    ensemble[basin][freq][f'{metric}_{freq}'] = val
+                try:
+                    ensemble_metrics = calculate_metrics(
+                        ensemble[basin][freq]['xr'][f'{target_var}_obs'],
+                        sim,
+                        metrics=config.metrics if isinstance(config.metrics, list) else config.metrics[target_var],
+                        resolution=freq)
+                    # add variable identifier to metrics if needed
+                    if len(target_vars) > 1:
+                        ensemble_metrics = {f'{target_var}_{key}': val for key, val in ensemble_metrics.items()}
+                    for metric, val in ensemble_metrics.items():
+                        ensemble[basin][freq][f'{metric}_{freq}'] = val
+                except ValueError:
+                    # Most likely obs is all nan ?
+                    for metric, val in ensemble_metrics.items():
+                        ensemble[basin][freq][f'{metric}_{freq}'] = np.nan
 
     return dict(ensemble)
 
