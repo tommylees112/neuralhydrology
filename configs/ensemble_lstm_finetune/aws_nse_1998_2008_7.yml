@@ -179,4 +179,6 @@ custom_normalization:
 use_basin_id_encoding: False
 
 # --- Finetune configurations --------------------------------------------------------------------------
-finetune_modules: head
+finetune_modules:
+- head
+- lstm
