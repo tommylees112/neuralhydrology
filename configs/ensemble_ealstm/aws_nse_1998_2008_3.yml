@@ -8,9 +8,9 @@ experiment_name: ealstm_ensemble3_nse_1998_2008
 run_dir: /cats/datastore/data/runs/ensemble_EALSTM
 
 # files to specify training, validation and test basins (relative to code root or absolute path)
-train_basin_file: ./data/camels_gb_basin_list.txt
-validation_basin_file: ./data/camels_gb_basin_list.txt
-test_basin_file: ./data/camels_gb_basin_list.txt
+train_basin_file: /home/tommy/neuralhydrology/data/camels_gb_basin_list.txt
+validation_basin_file: /home/tommy/neuralhydrology/data/camels_gb_basin_list.txt
+test_basin_file: /home/tommy/neuralhydrology/data/camels_gb_basin_list.txt
 
 # training, validation and test time periods (format = 'dd/mm/yyyy')
 train_start_date: '01/10/1980'
