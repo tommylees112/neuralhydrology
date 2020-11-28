@@ -5,7 +5,7 @@
 experiment_name: lstm_ensemble4_nse_1998_2008
 
 # place to store run directory (if empty runs are stored in code_dir/runs/)
-run_dir: /cats/datastore/data/runs/ensemble_finetune
+run_dir: /cats/datastore/data/runs/ensemble_finetune/FINE
 base_run_dir: /cats/datastore/data/runs/ensemble_finetune/lstm_ensemble4_nse_1998_2008_2710_171028
 
 # files to specify training, validation and test basins (relative to code root or absolute path)
@@ -177,3 +177,6 @@ clip_target_to_zero:
 custom_normalization:
 
 use_basin_id_encoding: False
+
+# --- Finetune configurations --------------------------------------------------------------------------
+finetune_modules: head
