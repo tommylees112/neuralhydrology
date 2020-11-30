@@ -9,9 +9,9 @@ run_dir: /cats/datastore/data/runs/ensemble_finetune/FINE
 base_run_dir: /cats/datastore/data/runs/ensemble_finetune/lstm_ensemble2_nse_1998_2008_2810_002655
 
 # files to specify training, validation and test basins (relative to code root or absolute path)
-train_basin_file: /home/tommy/neuralhydrology/data/finetune_basin_list.txt
-validation_basin_file: /home/tommy/neuralhydrology/data/finetune_basin_list.txt
-test_basin_file: /home/tommy/neuralhydrology/data/finetune_basin_list.txt
+train_basin_file: /home/tommy/neuralhydrology/data/st1_54052.txt
+validation_basin_file: /home/tommy/neuralhydrology/data/st1_54052.txt
+test_basin_file: /home/tommy/neuralhydrology/data/st1_54052.txt
 
 # training, validation and test time periods (format = 'dd/mm/yyyy')
 train_start_date: '01/10/1980'
@@ -75,15 +75,13 @@ loss: NSE
 
 # specify learning rates to use starting at specific epochs (0 is the initial learning rate)
 learning_rate:
-    0: 1e-3
-    10: 5e-4
-    20: 1e-4
+    0: 1e-4
 
 # Mini-batch size
 batch_size: 256
 
 # Number of training epochs
-epochs: 15
+epochs: 20
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1
