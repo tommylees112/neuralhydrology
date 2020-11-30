@@ -14,7 +14,7 @@ validation_basin_file: /home/tommy/neuralhydrology/data/st1_54052.txt
 test_basin_file: /home/tommy/neuralhydrology/data/st1_54052.txt
 
 # training, validation and test time periods (format = 'dd/mm/yyyy')
-train_start_date: '01/10/1980'
+train_start_date: '01/10/1970'
 train_end_date: '31/12/1997'
 validation_start_date: '01/10/1975'
 validation_end_date: '30/09/1980'
