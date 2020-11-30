@@ -180,4 +180,5 @@ use_basin_id_encoding: False
 
 # --- Finetune configurations --------------------------------------------------------------------------
 finetune_modules:
+- lstm
 - head
