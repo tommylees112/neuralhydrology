@@ -5,7 +5,7 @@
 experiment_name: lstm_ensemble4_nse_1998_2008_PET_1987
 
 # place to store run directory (if empty runs are stored in code_dir/runs/)
-run_dir: /cats/datastore/data/runs/ensemble_pet
+run_dir: /cats/datastore/data/runs/ensemble_pet_trainperiod
 
 # files to specify training, validation and test basins (relative to code root or absolute path)
 train_basin_file: /home/tommy/neuralhydrology/data/camels_gb_basin_list.txt
