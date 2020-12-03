@@ -13,7 +13,7 @@ validation_basin_file: /home/tommy/neuralhydrology/data/camels_gb_basin_list.txt
 test_basin_file: /home/tommy/neuralhydrology/data/camels_gb_basin_list.txt
 
 # training, validation and test time periods (format = 'dd/mm/yyyy')
-train_start_date: '01/10/1980'
+train_start_date: '01/01/1987'
 train_end_date: '31/12/1997'
 validation_start_date: '01/10/1975'
 validation_end_date: '30/09/1980'
@@ -32,7 +32,7 @@ seed: 2
 validate_every: 30
 
 # specify how many random basins to use for validation
-validate_n_random_basins: 1
+validate_n_random_basins: 10
 
 # specify which metrics to calculate during validation (see neuralhydrology.evaluation.metrics)
 # this can either be a list or a dictionary. If a dictionary is used, the inner keys must match the name of the
