@@ -8,12 +8,12 @@ experiment_name: lstm_all_vars_1998_2008_nh
 run_dir:
 
 # files to specify training, validation and test basins (relative to code root or absolute path)
-train_basin_file: /home/tommy/neuralhydrology/data/camels_gb_basin_list.txt
-validation_basin_file: /home/tommy/neuralhydrology/data/camels_gb_basin_list.txt
-test_basin_file: /home/tommy/neuralhydrology/data/camels_gb_basin_list.txt
+train_basin_file: /lustre/soge1/projects/crop_yield/neuralhydrology/data/camels_gb_basin_list.txt
+validation_basin_file: /lustre/soge1/projects/crop_yield/neuralhydrology/data/camels_gb_basin_list.txt
+test_basin_file: /lustre/soge1/projects/crop_yield/neuralhydrology/data/camels_gb_basin_list.txt
 
 # training, validation and test time periods (format = 'dd/mm/yyyy')
-train_start_date: '01/10/1980'
+train_start_date: '01/01/1988'
 train_end_date: '31/12/1997'
 validation_start_date: '01/10/1975'
 validation_end_date: '30/09/1980'
@@ -45,7 +45,7 @@ metrics:
 
 # base model type [lstm, ealstm, cudalstm, embcudalstm, mtslstm]
 # (has to match the if statement in modelzoo/__init__.py)
-model: cudalstm
+model: ealstm
 
 # prediction head [regression]. Define the head specific parameters below
 head: regression
@@ -117,7 +117,7 @@ save_weights_every: 1
 dataset: camels_gb
 
 # Path to data set root
-data_dir: /soge-home/projects/crop_yield/CAMELS/CAMELS_GB_DATASET
+data_dir: /lustre/soge1/projects/crop_yield/CAMELS/CAMELS_GB_DATASET
 
 # Path to pre-processed hdf5 file here (and corresponding scaler pickle file). Leave empty to create
 # new hdf5 file
@@ -138,8 +138,7 @@ target_variables:
 # variables to use as time series input (names match the data file column headers)
 dynamic_inputs:
 - precipitation
-- peti
-- temperature
+- pet
 
 # Which CAMELS attributes to use. Leave empty if none should be used
 # static_inputs:
