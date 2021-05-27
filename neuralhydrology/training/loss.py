@@ -98,6 +98,7 @@ class BaseLoss(torch.nn.Module):
 
     def _subset(self, prediction: Dict[str, torch.Tensor], ground_truth: Dict[str, torch.Tensor], predict_last_n: int) \
             -> Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]]:
+            # TODO: talk to freddy and daniel about this subsetting
         ground_truth_sub = {key: gt[:, -predict_last_n:, :] for key, gt in ground_truth.items()}
         prediction_sub = {key: pred[:, -predict_last_n:, :] for key, pred in prediction.items()}
 
@@ -191,6 +192,7 @@ class MaskedNSELoss(BaseLoss):
         y = ground_truth['y'][mask]
         per_basin_target_stds = kwargs['per_basin_target_stds']
         # expand dimension 1 to predict_last_n
+        # assert False  # TODO: TOMMY
         per_basin_target_stds = per_basin_target_stds.expand_as(prediction['y_hat'])[mask]
 
         squared_error = (y_hat - y)**2
@@ -228,7 +230,7 @@ class MaskedWeightedNSELoss(BaseLoss):
             self._loss_weights = torch.tensor(cfg.target_loss_weights).to(cfg.device)
 
     def _get_loss(self, prediction: Dict[str, torch.Tensor], ground_truth: Dict[str, torch.Tensor], **kwargs):
-
+    
         mask = ~torch.isnan(ground_truth['y'])
         y_hat = prediction['y_hat'] * torch.sqrt(self._loss_weights)
         y = ground_truth['y'] * torch.sqrt(self._loss_weights)

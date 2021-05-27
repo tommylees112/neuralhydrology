@@ -44,7 +44,7 @@ embedding_dropout: 0.0
 
 # --- Training configuration -----------------------------------------------------------------------
 optimizer: Adam
-loss: MSE
+loss: NSE
 learning_rate:
   0: 1e-3
   10: 5e-4
