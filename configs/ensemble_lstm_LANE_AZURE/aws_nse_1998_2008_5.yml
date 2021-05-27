@@ -96,7 +96,7 @@ predict_last_n: 1
 seq_length: 365
 
 # Number of parallel workers used in the data pipeline
-num_workers: 8
+num_workers: 6
 
 # Log the training loss every n steps
 log_interval: 10
