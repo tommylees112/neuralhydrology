@@ -24,7 +24,6 @@ def run_evaluation(run_dir: Path, epoch: Optional[int] = None, period: str = "te
             Defaults to None.
         period (str, optional): {"test", "train", "validation"}. Defaults to "test".
     """
-    #
     cfg = Config(run_dir / "config.yml")
     tester = Tester(cfg=cfg, run_dir=run_dir, period=period, init_model=True)
 
@@ -52,7 +51,7 @@ def get_args() -> Dict:
     return args
 
 
-def get_test_filepath(run_dir: Path, epoch: Optional[int]) -> Path:
+def get_test_filepath(run_dir: Path, epoch: Optional[int] = None) -> Path:
     # create filepath for test
     if epoch is None:
         #  get the maximum epoch
