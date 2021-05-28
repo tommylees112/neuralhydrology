@@ -17,7 +17,7 @@ def _load_weights(model, cfg: Config, epoch: int = None) -> nn.Module:
 def _get_weight_file(run_dir: Path, epoch: Optional[int] = None):
     """Get file path to weight file"""
     if epoch is None:
-        weight_file = sorted(list(run_dir.glob('model_epoch*.pt')))[-1]
+        weight_file = sorted(list(cfg.run_dir.glob('model_epoch*.pt')))[-1]
     else:
         weight_file = run_dir / f"model_epoch{str(epoch).zfill(3)}.pt"
 
