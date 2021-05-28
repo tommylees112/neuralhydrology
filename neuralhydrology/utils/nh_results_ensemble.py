@@ -26,7 +26,7 @@ def create_results_ensemble(run_dirs: List[Path],
     """Average the predictions of several runs for the specified period and calculate new metrics.
 
     If `best_k` is provided, only the k runs with the best validation NSE will be used in the generated ensemble.
-
+    
     Parameters
     ----------
     run_dirs : List[Path]
@@ -36,11 +36,11 @@ def create_results_ensemble(run_dirs: List[Path],
     metrics : List[str], optional
         Use this parameter to override the metrics from the config files in the run directories.
     period : {'test', 'validation', 'train'}, optional
-        One of train, val, test. If best_k is used, only 'test' is allowed.
+        One of train, val, test. If best_k is used, only 'test' is allowed. 
         The run_directories must contain results files for the specified period.
     epoch : int, optional
         If provided, will ensemble the model predictions of this epoch otherwise of the last epoch
-
+    
     Returns
     -------
     dict

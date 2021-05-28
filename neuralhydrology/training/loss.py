@@ -238,7 +238,6 @@ class MaskedNSELoss(BaseLoss):
         y = ground_truth['y'][mask]
         per_basin_target_stds = kwargs['per_basin_target_stds']
         # expand dimension 1 to predict_last_n
-        # assert False  # TODO: TOMMY
         per_basin_target_stds = per_basin_target_stds.expand_as(prediction['y_hat'])[mask]
 
         squared_error = (y_hat - y)**2

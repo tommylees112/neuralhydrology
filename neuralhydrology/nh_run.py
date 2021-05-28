@@ -39,7 +39,6 @@ def _main():
     if (args["run_dir"] is not None) and (args["mode"] == "evaluate"):
         setup_logging(str(Path(args["run_dir"]) / "output.log"))
 
-    # 
     if args["mode"] == "train":
         start_run(config_file=Path(args["config_file"]), gpu=args["gpu"])
     elif args["mode"] == "continue_training":
@@ -56,7 +55,7 @@ def _main():
 
 def start_run(config_file: Path, gpu: int = None):
     """Start training a model.
-
+    
     Parameters
     ----------
     config_file : Path
@@ -79,7 +78,7 @@ def start_run(config_file: Path, gpu: int = None):
 
 def continue_run(run_dir: Path, config_file: Path = None, gpu: int = None):
     """Continue model training.
-
+    
     Parameters
     ----------
     run_dir : Path
@@ -146,7 +145,7 @@ def finetune(config_file: Path = None, gpu: int = None):
 
 def eval_run(run_dir: Path, period: str, epoch: int = None, gpu: int = None):
     """Start evaluating a trained model.
-
+    
     Parameters
     ----------
     run_dir : Path
@@ -154,7 +153,7 @@ def eval_run(run_dir: Path, period: str, epoch: int = None, gpu: int = None):
     period : {'train', 'validation', 'test'}
         The period to evaluate.
     epoch : int, optional
-        Define a specific epoch to use. By default, the weights of the last epoch are used.
+        Define a specific epoch to use. By default, the weights of the last epoch are used.  
     gpu : int, optional
         GPU id to use. Will override config argument 'device'. A value less than zero indicates CPU.
 

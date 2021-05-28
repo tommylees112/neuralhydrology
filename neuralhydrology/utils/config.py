@@ -50,7 +50,7 @@ class Config(object):
 
     def as_dict(self) -> dict:
         """Return run configuration as dictionary.
-
+        
         Returns
         -------
         dict
@@ -106,10 +106,10 @@ class Config(object):
 
     def update_config(self, yml_path_or_dict: Union[Path, dict], dev_mode: bool = False):
         """Update config arguments.
-
+        
         Useful e.g. in the context of fine-tuning or when continuing to train from a checkpoint to adapt for example the
         learning rate, train basin files or anything else.
-
+        
         Parameters
         ----------
         yml_path_or_dict : Union[Path, dict]
@@ -656,6 +656,18 @@ class Config(object):
     @property
     def train_data_file(self) -> Path:
         return self._cfg.get("train_data_file", None)
+
+    @property
+    def dynamic_nc_file(self) -> Path:
+        return self._cfg.get("dynamic_nc_file", None)
+
+    @property
+    def static_nc_file(self) -> Path:
+        return self._cfg.get("static_nc_file", None)
+
+    @property
+    def pixel_dims(self) -> List[str]:
+        return self._cfg.get("pixel_dims", None)
 
     @property
     def train_dir(self) -> Path:
