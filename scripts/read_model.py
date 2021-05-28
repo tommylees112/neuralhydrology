@@ -1,6 +1,7 @@
 from pathlib import Path 
 from typing import Optional
 import torch
+from torch import nn
 from neuralhydrology.modelzoo import get_model
 from neuralhydrology.utils.config import Config
 
@@ -28,4 +29,3 @@ if __name__ == "__main__":
     cfg = Config(run_dir / "config.yml")
     model = get_model(cfg).to(cfg.device)
     model = _load_weights(model, cfg)
-    
