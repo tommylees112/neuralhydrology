@@ -101,7 +101,7 @@ def get_all_station_ds(res_fp: Path) -> xr.Dataset:
     return xr_obj
 
 
-def calculate_all_error_metrics(preds: xr.Dataset, basin_coord: str = "basin", time_coord: str = "date", obs_var: str = "discharge_spec_obs", sim_var: "discharge_spec_sim") -> pd.DataFrame:
+def calculate_all_error_metrics(preds: xr.Dataset, basin_coord: str = "basin", time_coord: str = "date", obs_var: str = "discharge_spec_obs", sim_var: str = "discharge_spec_sim") -> pd.DataFrame:
     all_errors: List[pd.DataFrame] = []
     missing_data: List[str] = []
 
