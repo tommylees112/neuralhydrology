@@ -8,7 +8,7 @@ from neuralhydrology.utils.config import Config
 
 def _load_weights(model, cfg: Config, epoch: int = None) -> nn.Module:
     """Load weights of a certain (or the last) epoch into the model."""
-    weight_file = _get_weight_file(epoch)
+    weight_file = _get_weight_file(cfg, epoch)
     print(f"Using the model weights from {weight_file}")
     model = model.load_state_dict(torch.load(weight_file, map_location=cfg.device))
     return model 
