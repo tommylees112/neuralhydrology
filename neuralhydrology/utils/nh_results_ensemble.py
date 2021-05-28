@@ -12,9 +12,10 @@ import xarray as xr
 from tqdm import tqdm
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
-from neuralhydrology.datautils.utils import sort_frequencies
-from neuralhydrology.evaluation.metrics import calculate_metrics
+from neuralhydrology.datautils.utils import get_frequency_factor, sort_frequencies
+from neuralhydrology.evaluation.metrics import calculate_metrics, get_available_metrics
 from neuralhydrology.utils.config import Config
+from neuralhydrology.utils.errors import AllNaNError
 
 
 def create_results_ensemble(run_dirs: List[Path],
@@ -97,43 +98,56 @@ def _create_ensemble(results_files: List[Path], frequencies: List[str], config: 
     ensemble = defaultdict(lambda: defaultdict(dict))
     for basin in tqdm(ensemble_sum.keys()):
         for freq in frequencies:
-            ensemble[basin][freq]['xr'] = ensemble_sum[basin][freq]
+            ensemble_xr = ensemble_sum[basin][freq]
 
             # combine date and time to a single index to calculate metrics
-            frequency_factor = pd.to_timedelta(lowest_freq) // pd.to_timedelta(freq)
-            ensemble[basin][freq]['xr'] = ensemble[basin][freq]['xr'].isel(
-                time_step=slice(-frequency_factor, None)).stack(datetime=['date', 'time_step'])
-            ensemble[basin][freq]['xr']['datetime'] = [
-                c[0] + c[1] for c in ensemble[basin][freq]['xr'].coords['datetime'].values
-            ]
+            # create datetime range at the current frequency, removing time steps that are not being predicted
+            frequency_factor = int(get_frequency_factor(lowest_freq, freq))
+            # make sure the last day is fully contained in the range
+            freq_date_range = pd.date_range(start=ensemble_xr.coords['date'].values[0],
+                                            end=ensemble_xr.coords['date'].values[-1] \
+                                                + pd.Timedelta(days=1, seconds=-1),
+                                            freq=freq)
+            mask = np.ones(frequency_factor).astype(bool)
+            mask[:-len(ensemble_xr.coords['time_step'])] = False
+            freq_date_range = freq_date_range[np.tile(mask, len(ensemble_xr.coords['date']))]
 
+            ensemble_xr = ensemble_xr.isel(time_step=slice(-frequency_factor, None)).stack(
+                datetime=['date', 'time_step'])
+            ensemble_xr['datetime'] = freq_date_range
             for target_var in target_vars:
                 # average predictions
-                ensemble[basin][freq]['xr'][f'{target_var}_sim'] = (
-                    ensemble[basin][freq]['xr'][f'{target_var}_sim'] / len(results_files)
-                )
+                ensemble_xr[f'{target_var}_sim'] = ensemble_xr[f'{target_var}_sim'] / len(results_files)
 
                 # clip predictions to zero
-                sim = ensemble[basin][freq]['xr'][f'{target_var}_sim']
+                sim = ensemble_xr[f'{target_var}_sim']
                 if target_var in config.clip_targets_to_zero:
                     sim = xr.where(sim < 0, 0, sim)
 
                 # calculate metrics
+                metrics = config.metrics if isinstance(config.metrics, list) else config.metrics[target_var]
+                if 'all' in metrics:
+                    metrics = get_available_metrics()
                 try:
-                    ensemble_metrics = calculate_metrics(
-                        ensemble[basin][freq]['xr'][f'{target_var}_obs'],
-                        sim,
-                        metrics=config.metrics if isinstance(config.metrics, list) else config.metrics[target_var],
-                        resolution=freq)
-                    # add variable identifier to metrics if needed
-                    if len(target_vars) > 1:
-                        ensemble_metrics = {f'{target_var}_{key}': val for key, val in ensemble_metrics.items()}
-                    for metric, val in ensemble_metrics.items():
-                        ensemble[basin][freq][f'{metric}_{freq}'] = val
-                except ValueError:
-                    # Most likely obs is all nan ?
-                    for metric, val in ensemble_metrics.items():
-                        ensemble[basin][freq][f'{metric}_{freq}'] = np.nan
+                    ensemble_metrics = calculate_metrics(ensemble_xr[f'{target_var}_obs'],
+                                                         sim,
+                                                         metrics=metrics,
+                                                         resolution=freq)
+                except AllNaNError as err:
+                    msg = f'Basin {basin} ' \
+                        + (f'{target_var} ' if len(target_vars) > 1 else '') \
+                        + (f'{freq} ' if len(frequencies) > 1 else '') \
+                        + str(err)
+                    print(msg)
+                    ensemble_metrics = {metric: np.nan for metric in metrics}
+
+                # add variable identifier to metrics if needed
+                if len(target_vars) > 1:
+                    ensemble_metrics = {f'{target_var}_{key}': val for key, val in ensemble_metrics.items()}
+                for metric, val in ensemble_metrics.items():
+                    ensemble[basin][freq][f'{metric}_{freq}'] = val
+
+            ensemble[basin][freq]['xr'] = ensemble_xr
 
     return dict(ensemble)
 
@@ -149,7 +163,7 @@ def _get_medians(results: dict, metric='NSE') -> dict:
                                     f'{metric}_{freq}' in results[list(results.keys())[0]][freq]):
             key = f'{metric}_{freq}'
         metric_values = [v[freq][key] for v in results.values() if freq in v.keys() and key in v[freq].keys()]
-        medians[freq] = np.median(metric_values)
+        medians[freq] = np.nanmedian(metric_values)
 
     return medians
 

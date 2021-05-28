@@ -28,13 +28,17 @@ class Logger(object):
 
         # get git commit hash if folder is a git repository
         current_dir = str(Path(__file__).absolute().parent)
-        if subprocess.call(["git", "-C", current_dir, "branch"], stderr=subprocess.DEVNULL,
-                           stdout=subprocess.DEVNULL) == 0:
-            git_output = subprocess.check_output(["git", "-C", current_dir, "describe", "--always"])
-            cfg.force_update(key='commit_hash', value=git_output.strip().decode('ascii'))
+        try:
+            if subprocess.call(["git", "-C", current_dir, "branch"],
+                               stderr=subprocess.DEVNULL,
+                               stdout=subprocess.DEVNULL) == 0:
+                git_output = subprocess.check_output(["git", "-C", current_dir, "describe", "--always"])
+                cfg.update_config({'commit_hash': git_output.strip().decode('ascii')})
+        except OSError:
+            pass  # likely, git is not installed.
 
         # Additionally, the package version is stored in the config
-        cfg.force_update(key="package_version", value=__version__)
+        cfg.update_config({"package_version": __version__})
 
         # store a copy of the config into the run folder
         cfg.dump_config(folder=self.log_dir)
@@ -154,7 +158,7 @@ class Logger(object):
         if self._train:
             value = avg_loss
         else:
-            value = {key: np.median(val) for key, val in self._metrics.items()}
+            value = {key: np.nanmedian(val) for key, val in self._metrics.items()}
 
         # clear buffer
         self._metrics = defaultdict(list)

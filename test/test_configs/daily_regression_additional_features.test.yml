@@ -32,7 +32,7 @@ model: cudalstm
 head: regression
 output_activation: linear
 
-hidden_size: 64
+hidden_size: 16
 initial_forget_bias: 3
 output_dropout: 0.4
 
@@ -68,7 +68,6 @@ dynamic_inputs:
 additional_feature_files: ./test/test_data/additional_features.p
 target_variables:
   - QObs(mm/d)
-zero_center_target: True
-camels_attributes:
+static_attributes:
   - elev_mean
   - slope_mean

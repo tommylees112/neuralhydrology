@@ -65,7 +65,7 @@ class BaseTrainer(object):
             LOGGER.info(f"### Continue training of run stored in {self.cfg.base_run_dir}")
 
         if self.cfg.is_finetuning:
-            LOGGER.info(f"### Start fine-tuning with pretrained model stored in {self.cfg.base_run_dir}")
+            LOGGER.info(f"### Start finetuning with pretrained model stored in {self.cfg.base_run_dir}")
 
         LOGGER.info(f"### Run configurations for {self.cfg.experiment_name}")
         for key, val in self.cfg.as_dict().items():
@@ -152,7 +152,7 @@ class BaseTrainer(object):
                 self._scaler = pickle.load(fp)
 
         self.optimizer = self._get_optimizer()
-        self.loss_obj = self._get_loss_obj()
+        self.loss_obj = self._get_loss_obj().to(self.device)
 
         # Add possible regularization terms to the loss function.
         self._set_regularization()
@@ -199,7 +199,6 @@ class BaseTrainer(object):
         ``validate_every`` epochs. Model and optimizer state are saved after every ``save_weights_every`` epochs.
         """
         for epoch in range(self._epoch + 1, self._epoch + self.cfg.epochs + 1):
-            # set new learning rate
             if epoch in self.cfg.learning_rate.keys():
                 LOGGER.info(f"Setting learning rate to {self.cfg.learning_rate[epoch]}")
                 for param_group in self.optimizer.param_groups:

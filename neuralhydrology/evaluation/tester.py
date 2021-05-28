@@ -9,6 +9,7 @@ from typing import Dict, List, Union
 
 import numpy as np
 import pandas as pd
+from pandas.tseries.frequencies import to_offset
 import torch
 import xarray
 from torch.utils.data import DataLoader
@@ -16,14 +17,14 @@ from tqdm import tqdm
 
 from neuralhydrology.datasetzoo import get_dataset
 from neuralhydrology.datasetzoo.basedataset import BaseDataset
-from neuralhydrology.datautils.utils import load_basin_file, sort_frequencies
+from neuralhydrology.datautils.utils import get_frequency_factor, load_basin_file, sort_frequencies
 from neuralhydrology.evaluation import plots
-from neuralhydrology.evaluation.metrics import calculate_metrics
+from neuralhydrology.evaluation.metrics import calculate_metrics, get_available_metrics
 from neuralhydrology.modelzoo import get_model
 from neuralhydrology.modelzoo.basemodel import BaseModel
 from neuralhydrology.training.logger import Logger
 from neuralhydrology.utils.config import Config
-from neuralhydrology.utils.errors import NoTrainDataError
+from neuralhydrology.utils.errors import AllNaNError, NoTrainDataError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -220,36 +221,51 @@ class BaseTester(object):
                     continue  # this frequency is not being predicted
                 results[basin][freq] = {}
 
+                # rescale observations
+                feature_scaler = self.scaler["xarray_feature_scale"][self.cfg.target_variables].to_array().values
+                feature_center = self.scaler["xarray_feature_center"][self.cfg.target_variables].to_array().values
+                y_freq = y[freq] * feature_scaler + feature_center
                 # rescale predictions
-                y_hat_freq = \
-                    y_hat[freq] * self.scaler["xarray_feature_scale"][self.cfg.target_variables].to_array().values \
-                    + self.scaler["xarray_feature_center"][self.cfg.target_variables].to_array().values
-                y_freq = y[freq] * self.scaler["xarray_feature_scale"][self.cfg.target_variables].to_array().values \
-                    + self.scaler["xarray_feature_center"][self.cfg.target_variables].to_array().values
+                if y_hat[freq].ndim == 3 or (len(feature_scaler) == 1):
+                    y_hat_freq = y_hat[freq] * feature_scaler + feature_center
+                elif y_hat[freq].ndim == 4:
+                    # if y_hat has 4 dim and we have multiple features we expand the dimensions for scaling
+                    feature_scaler = np.expand_dims(feature_scaler, (0, 1, 3))
+                    feature_center = np.expand_dims(feature_center, (0, 1, 3))
+                    y_hat_freq = y_hat[freq] * feature_scaler + feature_center
+                else:
+                    raise RuntimeError(f"Simulations have {y_hat[freq].ndim} dimension. Only 3 and 4 are supported.")
 
                 # create xarray
                 data = self._create_xarray(y_hat_freq, y_freq)
 
-                # get maximum warmup-offset across all frequencies
+                # get warmup-offsets across all frequencies
                 offsets = {
-                    freq: (seq_length[freq] - predict_last_n[freq]) * pd.to_timedelta(freq) for freq in ds.frequencies
+                    freq: ds.get_period_start(basin) + (seq_length[freq] - 1) * to_offset(freq)
+                    for freq in ds.frequencies
                 }
                 max_offset_freq = max(offsets, key=offsets.get)
-                start_date = ds.get_period_start(basin) + offsets[max_offset_freq]
+                start_date = offsets[max_offset_freq]
 
                 # determine the end of the first sequence (first target in sequence-to-one)
                 # we use the end_date stored in the dataset, which also covers issues with per-basin different periods
-                end_date = ds.dates[basin]["end_dates"][0] \
-                    + pd.Timedelta(days=1, seconds=-1) \
-                    - pd.to_timedelta(max_offset_freq) * (predict_last_n[max_offset_freq] - 1)
+                end_date = ds.dates[basin]["end_dates"][0] + pd.Timedelta(days=1, seconds=-1)
+
+                # date range at the lowest frequency
                 date_range = pd.date_range(start=start_date, end=end_date, freq=lowest_freq)
                 if len(date_range) != data[f"{self.cfg.target_variables[0]}_obs"][1].shape[0]:
                     raise ValueError("Evaluation date range does not match generated predictions.")
 
-                frequency_factor = pd.to_timedelta(lowest_freq) // pd.to_timedelta(freq)
-                freq_range = pd.timedelta_range(end=(frequency_factor - 1) * pd.to_timedelta(freq),
-                                                periods=predict_last_n[freq],
-                                                freq=freq)
+                # freq_range are the steps of the current frequency at each lowest-frequency step
+                frequency_factor = int(get_frequency_factor(lowest_freq, freq))
+                freq_range = list(range(frequency_factor - predict_last_n[freq], frequency_factor))
+
+                # create datetime range at the current frequency
+                freq_date_range = pd.date_range(start=start_date, end=end_date, freq=freq)
+                # remove datetime steps that are not being predicted from the datetime range
+                mask = np.ones(frequency_factor).astype(bool)
+                mask[:-predict_last_n[freq]] = False
+                freq_date_range = freq_date_range[np.tile(mask, len(date_range))]
 
                 xr = xarray.Dataset(data_vars=data, coords={'date': date_range, 'time_step': freq_range})
                 results[basin][freq]['xr'] = xr
@@ -264,12 +280,12 @@ class BaseTester(object):
                         # stack dates and time_steps so we don't just evaluate every 24H when use_frequencies=[1D, 1H]
                         obs = xr.isel(time_step=slice(-frequency_factor, None)) \
                             .stack(datetime=['date', 'time_step'])[f"{target_variable}_obs"]
-                        obs['datetime'] = obs.coords['date'] + obs.coords['time_step']
-                        # check if not empty (in case no observations exist in this period
+                        obs['datetime'] = freq_date_range
+                        # check if there are observations for this period
                         if not all(obs.isnull()):
                             sim = xr.isel(time_step=slice(-frequency_factor, None)) \
                                 .stack(datetime=['date', 'time_step'])[f"{target_variable}_sim"]
-                            sim['datetime'] = sim.coords['date'] + sim.coords['time_step']
+                            sim['datetime'] = freq_date_range
 
                             # clip negative predictions to zero, if variable is listed in config 'clip_target_to_zero'
                             if target_variable in self.cfg.clip_targets_to_zero:
@@ -277,11 +293,20 @@ class BaseTester(object):
 
                             if 'samples' in sim.dims:
                                 sim = sim.mean(dim='samples')
-                            values = calculate_metrics(
-                                obs,
-                                sim,
-                                metrics=metrics if isinstance(metrics, list) else metrics[target_variable],
-                                resolution=freq)
+
+                            var_metrics = metrics if isinstance(metrics, list) else metrics[target_variable]
+                            if 'all' in var_metrics:
+                                var_metrics = get_available_metrics()
+                            try:
+                                values = calculate_metrics(obs, sim, metrics=var_metrics, resolution=freq)
+                            except AllNaNError as err:
+                                msg = f'Basin {basin} ' \
+                                    + (f'{target_variable} ' if len(self.cfg.target_variables) > 1 else '') \
+                                    + (f'{freq} ' if len(ds.frequencies) > 1 else '') \
+                                    + str(err)
+                                LOGGER.warning(msg)
+                                values = {metric: np.nan for metric in var_metrics}
+
                             # add variable identifier to metrics if needed
                             if len(self.cfg.target_variables) > 1:
                                 values = {f"{target_variable}_{key}": val for key, val in values.items()}
@@ -293,7 +318,7 @@ class BaseTester(object):
                             for k, v in values.items():
                                 results[basin][freq][k] = v
 
-        if (self.period == "validation") and (self.cfg.log_n_figures > 0):
+        if (self.period == "validation") and (self.cfg.log_n_figures > 0) and (experiment_logger is not None):
             self._create_and_log_figures(results, experiment_logger, epoch)
 
         if save_results:
@@ -441,10 +466,9 @@ class UncertaintyTester(BaseTester):
         super(UncertaintyTester, self).__init__(cfg, run_dir, period, init_model)
 
     def _generate_predictions(self, model: BaseModel, data: Dict[str, torch.Tensor]):
-        if self.cfg.mc_dropout:
-            return model.sample(data, self.cfg.n_samples)
-        else:
-            raise ValueError(f"Currently, uncertainty evaluation does only support MC-Dropout")
+        samples = model.sample(data, self.cfg.n_samples)
+        model.eval()
+        return samples
 
     def _subset_targets(self,
                         model: BaseModel,
@@ -452,15 +476,15 @@ class UncertaintyTester(BaseTester):
                         predictions: np.ndarray,
                         predict_last_n: int,
                         freq: str = None):
-        y_hat_sub = predictions  # predictions are already subset by the sample functions
-        y_sub = data['y'][:, -predict_last_n:, :]
+        y_hat_sub = predictions[f'y_hat{freq}'][:, -predict_last_n:, :]
+        y_sub = data[f'y{freq}'][:, -predict_last_n:, :]
         return y_hat_sub, y_sub
 
     def _create_xarray(self, y_hat: np.ndarray, y: np.ndarray):
         data = {}
-        var = self.cfg.target_variables[0]
-        data[f"{var}_obs"] = (('date', 'time_step'), y[:, :, 0])
-        data[f"{var}_sim"] = (('date', 'time_step', 'samples'), y_hat[:, :, :])
+        for i, var in enumerate(self.cfg.target_variables):
+            data[f"{var}_obs"] = (('date', 'time_step'), y[:, :, i])
+            data[f"{var}_sim"] = (('date', 'time_step', 'samples'), y_hat[:, :, i, :])
         return data
 
     def _get_plots(self, qobs: np.ndarray, qsim: np.ndarray, title: str):

@@ -2,6 +2,7 @@ from neuralhydrology.datasetzoo.basedataset import BaseDataset
 from neuralhydrology.datasetzoo.camelscl import CamelsCL
 from neuralhydrology.datasetzoo.camelsgb import CamelsGB
 from neuralhydrology.datasetzoo.camelsus import CamelsUS
+from neuralhydrology.datasetzoo.genericdataset import GenericDataset
 from neuralhydrology.datasetzoo.hourlycamelsus import HourlyCamelsUS
 from neuralhydrology.utils.config import Config
 
@@ -33,7 +34,7 @@ def get_dataset(cfg: Config,
         basin file, corresponding to the `period`.
     additional_features : List[Dict[str, pd.DataFrame]], optional
         List of dictionaries, mapping from a basin id to a pandas DataFrame. This DataFrame will be added to the data
-        loaded from the dataset and all columns are available as 'dynamic_inputs', 'static_inputs' and 
+        loaded from the dataset and all columns are available as 'dynamic_inputs', 'evolving_attributes' and
         'target_variables'
     id_to_int : Dict[str, int], optional
         If the config argument 'use_basin_id_encoding' is True in the config and period is either 'validation' or 
@@ -52,14 +53,16 @@ def get_dataset(cfg: Config,
     NotImplementedError
         If no data set class is implemented for the 'dataset' argument in the config.
     """
-    if cfg.dataset == "camels_us":
+    if cfg.dataset.lower() == "camels_us":
         Dataset = CamelsUS
-    elif cfg.dataset == "camels_gb":
+    elif cfg.dataset.lower() == "camels_gb":
         Dataset = CamelsGB
-    elif cfg.dataset == "hourly_camels_us":
+    elif cfg.dataset.lower() == "hourly_camels_us":
         Dataset = HourlyCamelsUS
-    elif cfg.dataset == "camels_cl":
+    elif cfg.dataset.lower() == "camels_cl":
         Dataset = CamelsCL
+    elif cfg.dataset.lower() == "generic":
+        Dataset = GenericDataset
     else:
         raise NotImplementedError(f"No dataset class implemented for dataset {cfg.dataset}")
 

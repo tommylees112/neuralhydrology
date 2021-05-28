@@ -52,7 +52,7 @@ metrics:
 
 # --- Model configuration --------------------------------------------------------------------------
 
-# base model type [lstm, ealstm, cudalstm, embcudalstm, mtslstm, gru]
+# base model type [cudalstm, customlstm, ealstm, embcudalstm, mtslstm, gru, transformer]
 # (has to match the if statement in modelzoo/__init__.py)
 model: cudalstm
 
@@ -67,21 +67,35 @@ output_activation: linear
 
 # ----> Embedding network settings <----
 
-# define number of neurons per layer in the FC network used as embedding/shortcut network
-embedding_hiddens:
-- 30
-- 20
-- 64
+# define embedding network for static inputs
+statics_embedding:
+  type: fc
+  # define number of neurons per layer in the FC network used as embedding network
+  hiddens:
+    - 30
+    - 20
+    - 64
+  # activation function of embedding network
+  activation: tanh
+  # dropout applied to embedding network
+  dropout: 0.0
 
-# activation function of embedding network (currently only tanh supported)
-embedding_activation: tanh
-
-# dropout applied to embedding network
-embedding_dropout: 0.0
+# define embedding network for dynamic inputs
+dynamics_embedding:
+  type: fc
+  # define number of neurons per layer in the FC network used as embedding network
+  hiddens:
+    - 30
+    - 20
+    - 64
+  # activation function of embedding network
+  activation: tanh
+  # dropout applied to embedding network
+  dropout: 0.0
 
 # ----> MTSLSTM settings <----
 
-# Use an individual LSTM per frequencies (False) vs. use a single shared LSTM for all frequencies (True)
+# use an individual LSTM per frequencies (False) vs. use a single shared LSTM for all frequencies (True)
 shared_mtslstm: False
 
 # how to transfer states from lower to higher frequencies. One of [identity, linear, None].
@@ -99,6 +113,26 @@ ode_num_unfolds: 4
 # lowest frequency that will be used to randomly aggregate the first slice of the input sequence.
 # See ODELSTM for more details on the frequency randomization.
 ode_random_freq_lower_bound: 6D
+
+# ----> Transformer settings <----
+
+# number of layers in transformer encoding:
+transformer_nlayers: 4
+
+# type of positional encoding (sum or concatenate)
+transformer_positional_encoding_type: sum
+
+# dimension of feedforward in each encoding layer
+transformer_dim_feedforward: 32
+
+# dropout applied only to the positional encoding
+transformer_positional_dropout: 0.0
+
+# dropout used in the encoding layers
+transformer_dropout: 0
+
+# number of transformer heads
+transformer_nheads: 4
 
 # ----> General settings <----
 
@@ -184,7 +218,7 @@ save_validation_results: False
 
 # --- Data configurations --------------------------------------------------------------------------
 
-# which data set to use [camels_us, camels_gb, global, hourly_camels_us, camels_cl]
+# which data set to use [camels_us, camels_gb, global, hourly_camels_us, camels_cl, generic]
 dataset: camels_us
 
 # Path to data set root
@@ -221,13 +255,11 @@ target_variables:
 - QObs(mm/d)
 
 # clip negative predictions to zero for all variables listed below. Should be a list, even for single variables.
-clip_target_to_zero:
+clip_targets_to_zero:
 - QObs(mm/d)
 
-zero_center_target: True
-
 # Which CAMELS attributes to use. Leave empty if none should be used
-camels_attributes:
+static_attributes:
 - elev_mean
 - slope_mean
 - area_gages2
@@ -262,14 +294,10 @@ camels_attributes:
 # same row (datetime) as the target discharge value.
 additional_feature_files:
 
-# columns of the data frame to use as (additional) static inputs for each sample. Must be present in
-# the above linked additional feature files. Leave empty to not use any
-static_inputs:
+# columns of the data frame to use as (additional) "static" inputs for each sample. Must be present in
+# the above linked additional feature files. These values will be used as static inputs, but they can evolve over time.
+# Leave empty to not use any.
+evolving_attributes:
 
 # whether to use basin id one hot encoding as (additional) static input
 use_basin_id_encoding: False
-
-
-
-
-

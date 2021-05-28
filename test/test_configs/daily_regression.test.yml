@@ -32,15 +32,9 @@ model: cudalstm
 head: regression
 output_activation: linear
 
-hidden_size: 64
+hidden_size: 16
 initial_forget_bias: 3
 output_dropout: 0.4
-embedding_hiddens:
-  - 30
-  - 20
-  - 64
-embedding_activation: tanh
-embedding_dropout: 0.0
 
 # --- Training configuration -----------------------------------------------------------------------
 optimizer: Adam
@@ -70,7 +64,6 @@ forcings: # will be filled by conftest
 dynamic_inputs: # will be filled by conftest
 target_variables:
   - QObs(mm/d)
-zero_center_target: True
-camels_attributes:
+static_attributes:
   - elev_mean
   - slope_mean

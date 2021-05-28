@@ -1,4 +1,5 @@
-from typing import List, Dict
+import logging
+from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -6,6 +7,9 @@ from scipy import stats, signal
 from xarray.core.dataarray import DataArray
 
 from neuralhydrology.datautils import utils
+from neuralhydrology.utils.errors import AllNaNError
+
+LOGGER = logging.getLogger(__name__)
 
 
 def get_available_metrics() -> List[str]:
@@ -28,7 +32,7 @@ def _validate_inputs(obs: DataArray, sim: DataArray):
         raise RuntimeError("Metrics only defined for time series (1d or 2d with second dimension 1)")
 
 
-def _mask_valid(obs: DataArray, sim: DataArray) -> (DataArray, DataArray):
+def _mask_valid(obs: DataArray, sim: DataArray) -> Tuple[DataArray, DataArray]:
     # mask of invalid entries. NaNs in simulations can happen during validation/testing
     idx = (~sim.isnull()) & (~obs.isnull())
 
@@ -297,6 +301,9 @@ def kge(obs: DataArray, sim: DataArray, weights: List[float] = [1., 1., 1.]) -> 
     # get time series with only valid observations
     obs, sim = _mask_valid(obs, sim)
 
+    if len(obs) < 2:
+        return np.nan
+
     r, _ = stats.pearsonr(obs.values, sim.values)
 
     alpha = sim.std() / obs.std()
@@ -330,6 +337,9 @@ def pearsonr(obs: DataArray, sim: DataArray) -> float:
     # get time series with only valid observations
     obs, sim = _mask_valid(obs, sim)
 
+    if len(obs) < 2:
+        return np.nan
+
     r, _ = stats.pearsonr(obs.values, sim.values)
 
     return float(r)
@@ -346,9 +356,7 @@ def fdc_fms(obs: DataArray, sim: DataArray, lower: float = 0.2, upper: float = 0
     where :math:`Q_{s,\text{lower/upper}}` corresponds to the FDC of the simulations (here, `sim`) at the `lower` and
     `upper` bound of the middle section and :math:`Q_{o,\text{lower/upper}}` similarly for the observations (here,
     `obs`).
-
-
-
+    
     Parameters
     ----------
     obs : DataArray
@@ -376,6 +384,9 @@ def fdc_fms(obs: DataArray, sim: DataArray, lower: float = 0.2, upper: float = 0
 
     # get time series with only valid observations
     obs, sim = _mask_valid(obs, sim)
+
+    if len(obs) < 1:
+        return np.nan
 
     if any([(x <= 0) or (x >= 1) for x in [upper, lower]]):
         raise ValueError("upper and lower have to be in range ]0,1[")
@@ -436,6 +447,9 @@ def fdc_fhv(obs: DataArray, sim: DataArray, h: float = 0.02) -> float:
     # get time series with only valid observations
     obs, sim = _mask_valid(obs, sim)
 
+    if len(obs) < 1:
+        return np.nan
+
     if (h <= 0) or (h >= 1):
         raise ValueError("h has to be in range ]0,1[. Consider small values, e.g. 0.02 for 2% peak flows")
 
@@ -487,6 +501,9 @@ def fdc_flv(obs: DataArray, sim: DataArray, l: float = 0.3) -> float:
 
     # get time series with only valid observations
     obs, sim = _mask_valid(obs, sim)
+
+    if len(obs) < 1:
+        return np.nan
 
     if (l <= 0) or (l >= 1):
         raise ValueError("l has to be in range ]0,1[. Consider small values, e.g. 0.3 for 30% low flows")
@@ -564,7 +581,7 @@ def mean_peak_timing(obs: DataArray,
     obs, sim = _mask_valid(obs, sim)
 
     # heuristic to get indices of peaks and their corresponding height.
-    peaks, properties = signal.find_peaks(obs.values, distance=100, prominence=np.std(obs.values))
+    peaks, _ = signal.find_peaks(obs.values, distance=100, prominence=np.std(obs.values))
 
     # infer name of datetime index
     if datetime_coord is None:
@@ -572,7 +589,7 @@ def mean_peak_timing(obs: DataArray,
 
     if window is None:
         # infer a reasonable window size
-        window = max((0.5 * pd.to_timedelta('1D')) // pd.to_timedelta(resolution), 3)
+        window = max(int(utils.get_frequency_factor('12H', resolution)), 3)
 
     # evaluate timing
     timing_errors = []
@@ -605,7 +622,9 @@ def mean_peak_timing(obs: DataArray,
     return np.mean(timing_errors) if len(timing_errors) > 0 else np.nan
 
 
-def calculate_all_metrics(obs: DataArray, sim: DataArray, resolution: str = "1D",
+def calculate_all_metrics(obs: DataArray,
+                          sim: DataArray,
+                          resolution: str = "1D",
                           datetime_coord: str = None) -> Dict[str, float]:
     """Calculate all metrics with default values.
 
@@ -624,7 +643,14 @@ def calculate_all_metrics(obs: DataArray, sim: DataArray, resolution: str = "1D"
     -------
     Dict[str, float]
         Dictionary with keys corresponding to metric name and values corresponding to metric values.
+
+    Raises
+    ------
+    AllNaNError
+        If all observations or all simulations are NaN.
     """
+    _check_all_nan(obs, sim)
+
     results = {
         "NSE": nse(obs, sim),
         "MSE": mse(obs, sim),
@@ -666,36 +692,56 @@ def calculate_metrics(obs: DataArray,
     -------
     Dict[str, float]
         Dictionary with keys corresponding to metric name and values corresponding to metric values.
+
+    Raises
+    ------
+    AllNaNError
+        If all observations or all simulations are NaN.
     """
+    if 'all' in metrics:
+        return calculate_all_metrics(obs, sim, resolution=resolution)
+
+    _check_all_nan(obs, sim)
+
     values = {}
     for metric in metrics:
-        if metric == 'all':
-            values = calculate_all_metrics(obs, sim, resolution=resolution)
-            break
+        if metric.lower() == "nse":
+            values["NSE"] = nse(obs, sim)
+        elif metric.lower() == "mse":
+            values["MSE"] = mse(obs, sim)
+        elif metric.lower() == "rmse":
+            values["RMSE"] = rmse(obs, sim)
+        elif metric.lower() == "kge":
+            values["KGE"] = kge(obs, sim)
+        elif metric.lower() == "alpha-nse":
+            values["Alpha-NSE"] = alpha_nse(obs, sim)
+        elif metric.lower() == "beta-nse":
+            values["Beta-NSE"] = beta_nse(obs, sim)
+        elif metric.lower() == "pearson-r":
+            values["Pearson-r"] = pearsonr(obs, sim)
+        elif metric.lower() == "fhv":
+            values["FHV"] = fdc_fhv(obs, sim)
+        elif metric.lower() == "fms":
+            values["FMS"] = fdc_fms(obs, sim)
+        elif metric.lower() == "flv":
+            values["FLV"] = fdc_flv(obs, sim)
+        elif metric.lower() == "peak-timing":
+            values["Peak-Timing"] = mean_peak_timing(obs, sim, resolution=resolution, datetime_coord=datetime_coord)
         else:
-            if metric.lower() == "nse":
-                values["NSE"] = nse(obs, sim)
-            elif metric.lower() == "mse":
-                values["MSE"] = mse(obs, sim)
-            elif metric.lower() == "rmse":
-                values["RMSE"] = rmse(obs, sim)
-            elif metric.lower() == "kge":
-                values["KGE"] = kge(obs, sim)
-            elif metric.lower() == "alpha-nse":
-                values["Alpha-NSE"] = alpha_nse(obs, sim)
-            elif metric.lower() == "beta-nse":
-                values["Beta-NSE"] = beta_nse(obs, sim)
-            elif metric.lower() == "pearson-r":
-                values["Pearson-r"] = pearsonr(obs, sim)
-            elif metric.lower() == "fhv":
-                values["FHV"] = fdc_fhv(obs, sim)
-            elif metric.lower() == "fms":
-                values["FMS"] = fdc_fms(obs, sim)
-            elif metric.lower() == "flv":
-                values["FLV"] = fdc_flv(obs, sim)
-            elif metric.lower() == "peak-timing":
-                values["Peak-Timing"] = mean_peak_timing(obs, sim, resolution=resolution, datetime_coord=datetime_coord)
-            else:
-                raise RuntimeError(f"Unknown metric {metric}")
+            raise RuntimeError(f"Unknown metric {metric}")
 
     return values
+
+
+def _check_all_nan(obs: DataArray, sim: DataArray):
+    """Check if all observations or simulations are NaN and raise an exception if this is the case.
+
+    Raises
+    ------
+    AllNaNError
+        If all observations or all simulations are NaN.
+    """
+    if all(obs.isnull()):
+        raise AllNaNError("All observed values are NaN, thus metrics will be NaN, too.")
+    if all(sim.isnull()):
+        raise AllNaNError("All simulated values are NaN, thus metrics will be NaN, too.")

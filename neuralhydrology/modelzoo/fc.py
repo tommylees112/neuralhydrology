@@ -1,49 +1,39 @@
+from typing import List
+
 import numpy as np
 import torch
 import torch.nn as nn
 
-from neuralhydrology.utils.config import Config
-
 
 class FC(nn.Module):
     """Auxiliary class to build (multi-layer) fully-connected networks.
-    
-    This class is used in different places of the codebase to build fully-connected networks. E.g., the `EA-LSTM` and
-    `EmbCudaLSTM` use this class to create embedding networks for the static inputs.
-    Use the config argument `embedding_hiddens` to specify the hidden neurons of the embedding network. If only one
-    number is specified the embedding network consists of a single linear layer that maps the input into the specified
-    dimension.
-    Use the config argument `embedding_activation` to specify the activation function for intermediate layers. Currently
-    supported are 'tanh' and 'sigmoid'.
-    Use the config argument `embedding_dropout` to specify the dropout rate in intermediate layers.
-    
+
+    This class is used to build fully-connected embedding networks for static and/or dynamic input data.
+    Use the config argument `statics/dynamics_embedding` to specify the architecture of the embedding network. See the
+    `InputLayer` class on how to specify the exact embedding architecture.
+
     Parameters
     ----------
-    cfg : Config
-        The run configuration.
-    input_size : int, optional
-        Number of input features. If not specified, the number of input features is the sum of all static inputs (i.e.,
-        catchment attributes, one-hot-encoding, etc.)
+    input_size : int
+        Number of input features.
+    hidden_sizes : List[int]
+        Size of the hidden and output layers.
+    activation : str, optional
+        Activation function for intermediate layers, default tanh.
+    dropout : float, optional
+        Dropout rate in intermediate layers.
     """
 
-    def __init__(self, cfg: Config, input_size: int = None):
+    def __init__(self, input_size: int, hidden_sizes: List[int], activation: str = 'tanh', dropout: float = 0.0):
         super(FC, self).__init__()
 
-        # If input size is not passed, will use number of all static features as input
-        if input_size is None:
-            input_size = len(cfg.camels_attributes + cfg.hydroatlas_attributes + cfg.static_inputs)
-            if cfg.use_basin_id_encoding:
-                input_size += cfg.number_of_basins
+        if len(hidden_sizes) == 0:
+            raise ValueError('hidden_sizes must at least have one entry to create a fully-connected net.')
 
-        if len(cfg.embedding_hiddens) > 1:
-            hidden_sizes = cfg.embedding_hiddens[:-1]
-        else:
-            hidden_sizes = []
+        self.output_size = hidden_sizes[-1]
+        hidden_sizes = hidden_sizes[:-1]
 
-        output_size = cfg.embedding_hiddens[-1]
-
-        # by default tanh
-        activation = self._get_activation(cfg.embedding_activation)
+        activation = self._get_activation(activation)
 
         # create network
         layers = []
@@ -55,12 +45,11 @@ class FC(nn.Module):
                     layers.append(nn.Linear(hidden_sizes[i - 1], hidden_size))
 
                 layers.append(activation)
-                # by default 0.0
-                layers.append(nn.Dropout(p=cfg.embedding_dropout))
+                layers.append(nn.Dropout(p=dropout))
 
-            layers.append(nn.Linear(hidden_size, output_size))
+            layers.append(nn.Linear(hidden_size, self.output_size))
         else:
-            layers.append(nn.Linear(input_size, output_size))
+            layers.append(nn.Linear(input_size, self.output_size))
 
         self.net = nn.Sequential(*layers)
         self._reset_parameters()
@@ -70,6 +59,8 @@ class FC(nn.Module):
             activation = nn.Tanh()
         elif name.lower() == "sigmoid":
             activation = nn.Sigmoid()
+        elif name.lower() == "linear":
+            activation = nn.Identity()
         else:
             raise NotImplementedError(f"{name} currently not supported as activation in this class")
         return activation
@@ -85,7 +76,7 @@ class FC(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Perform a forward pass on the FC model.
-        
+
         Parameters
         ----------
         x : torch.Tensor
@@ -94,7 +85,6 @@ class FC(nn.Module):
         Returns
         -------
         torch.Tensor
-            Embedded inputs of shape [any, any, output_size], where 'output_size' is the last number specified in the 
-            `embedding_hiddens` config argument.
+            Embedded inputs of shape [any, any, output_size], where 'output_size' is the size of the last network layer.
         """
         return self.net(x)

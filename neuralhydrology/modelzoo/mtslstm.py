@@ -5,7 +5,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 
-from neuralhydrology.datautils.utils import sort_frequencies
+from neuralhydrology.datautils.utils import get_frequency_factor, sort_frequencies
 from neuralhydrology.modelzoo.head import get_head
 from neuralhydrology.modelzoo.basemodel import BaseModel
 from neuralhydrology.utils.config import Config
@@ -14,7 +14,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class MTSLSTM(BaseModel):
-    """Multi-Timescale LSTM (MTS-LSTM) from Gauch et al. (preprint to be released soon).
+    """Multi-Timescale LSTM (MTS-LSTM) from Gauch et al. [#]_.
 
     An LSTM architecture that allows simultaneous prediction at multiple timescales within one model.
     There are two flavors of this model: MTS-LTSM and sMTS-LSTM (shared MTS-LSTM). The MTS-LSTM processes inputs at
@@ -37,6 +37,12 @@ class MTSLSTM(BaseModel):
     ----------
     cfg : Config
         The run configuration.
+
+    References
+    ----------
+    .. [#] Gauch, M., Kratzert, F., Klotz, D., Grey, N., Lin, J., and Hochreiter, S.: Rainfall-Runoff Prediction at
+        Multiple Timescales with a Single Long Short-Term Memory Network, arXiv Preprint,
+        https://arxiv.org/abs/2010.07921, 2020.
     """
     # specify submodules of the model that can later be used for finetuning. Names must match class attributes
     module_parts = ['lstms', 'transfer_fcs', 'heads']
@@ -64,7 +70,7 @@ class MTSLSTM(BaseModel):
         self._frequencies = sort_frequencies(cfg.use_frequencies)
 
         # start to count the number of inputs
-        input_sizes = len(cfg.camels_attributes + cfg.hydroatlas_attributes + cfg.static_inputs)
+        input_sizes = len(cfg.static_attributes + cfg.hydroatlas_attributes + cfg.evolving_attributes)
 
         # if is_shared_mtslstm, the LSTM gets an additional frequency flag as input.
         if self._is_shared_mtslstm:
@@ -129,7 +135,7 @@ class MTSLSTM(BaseModel):
     def _init_frequency_factors_and_slice_timesteps(self):
         for idx, freq in enumerate(self._frequencies):
             if idx < len(self._frequencies) - 1:
-                frequency_factor = pd.to_timedelta(freq) / pd.to_timedelta(self._frequencies[idx + 1])
+                frequency_factor = get_frequency_factor(freq, self._frequencies[idx + 1])
                 if frequency_factor != int(frequency_factor):
                     raise ValueError('Adjacent frequencies must be multiples of each other.')
                 self._frequency_factors.append(int(frequency_factor))
@@ -216,6 +222,7 @@ class MTSLSTM(BaseModel):
                 # for highest frequency, we can pass the entire sequence at once
                 lstm_output, _ = self.lstms[freq](x_d[freq], (h_0_transfer, c_0_transfer))
 
-            outputs[f'y_hat_{freq}'] = self.heads[freq](self.dropout(lstm_output.transpose(0, 1)))['y_hat']
+            head_out = self.heads[freq](self.dropout(lstm_output.transpose(0, 1)))
+            outputs.update({f'{key}_{freq}': value for key, value in head_out.items()})
 
         return outputs

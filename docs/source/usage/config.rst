@@ -43,6 +43,36 @@ General experiment configurations
 -  ``test_end_date``: End date of the validation period (last day of
    discharge) in the format ``DD/MM/YYYY``. Can also be 
    a list of dates (similar to train period specifications).
+-  ``per_basin_train_periods_file``: Alternatively to specifying a global
+   train period for all basins (using ``train_start_date`` and ``train_end_date``)
+   it is also possible to use individual periods for each basin. For that to work
+   you have to create a dictionary with one key per basin id. For each basin id,
+   the dictionary contains two keys ``start_dates`` and ``end_dates``, which
+   contain a list of pandas TimeStamps that indicate the start and end dates
+   of the train periods. ``start_dates`` and ``end_dates`` have to be a list,
+   even in case of a single period per basin (see example below). Then use the
+   pickle library, to store this dictionary to disk and use the path to this
+   pickle file as the value for this config argument.
+
+.. code-block::
+
+   import pandas as pd
+
+   dates = {
+        'basin_a': {
+            'start_dates': [pd.to_datetime('01/01/1980')],
+            'end_dates': [pd.to_datetime('31/12/1999')]
+        },
+        'basin_b': {
+            'start_dates': [pd.to_datetime('01/01/1980'), pd.to_datetime('01/01/2000')],
+            'end_dates': [pd.to_datetime('31/12/1990'), pd.to_datetime('01/01/2005')]
+        }
+    }
+
+-  ``per_basin_validation_periods_file``: Same as ``per_basin_train_periods_file``
+   but indicating individual periods that are used as validation periods.
+-  ``per_basin_test_periods_file``: Same as ``per_basin_train_periods_file``
+   but indicating individual periods that are used as test periods.
 
 -  ``seed``: Fixed random seed. If empty, a random seed is generated for
    this run.
@@ -63,7 +93,7 @@ Validation settings
 
 -  ``metrics``: List of metrics to calculate during validation/testing.
    See
-   `codebase.evaluation.metrics <https://neuralhydrology.readthedocs.io/en/latest/api/neuralhydrology.evaluation.metrics.html>`__
+   :py:mod:`neuralhydrology.evaluation.metrics`
    for a list of available metrics.
 
 -  ``save_validation_results``: True/False, if True, stores the
@@ -73,17 +103,17 @@ Validation settings
 General model configuration
 ---------------------------
 
--  ``model``: Defines the core of the model that will be used. Names
+-  ``model``: Defines the model class, i.e. the core of the model, that will be used. Names
    have to match the values in `this
-   function <https://github.com/neuralhydrology/neuralhydrology/blob/master/neuralhydrology/modelzoo/__init__.py#L14>`__,
-   e.g., [``cudalstm``, ``ealstm``, ``embcudalstm``, ``mtslstm``]
+   function <https://github.com/neuralhydrology/neuralhydrology/blob/master/neuralhydrology/modelzoo/__init__.py#L17>`__,
+   e.g., [``cudalstm``, ``ealstm``, ``mtslstm``]
 
 -  ``head``: The prediction head that is used on top of the output of
-   the core model. Currently supported is ``regression``.
+   the model class. Currently supported are ``regression``, ``gmm``, ``cmal``, and ``umal``.
    Make sure to pass the necessary options depending on your
    choice of the head (see below).
 
--  ``hidden_size``: Hidden size of the core model. In the case of an
+-  ``hidden_size``: Hidden size of the model class. In the case of an
    LSTM, this reflects the number of LSTM states.
 
 -  ``initial_forget_bias``: Initial value of the forget gate bias.
@@ -92,13 +122,73 @@ General model configuration
 
 Regression head
 ~~~~~~~~~~~~~~~
-
 Can be ignored if ``head != 'regression'``
 
 -  ``output_activation``: Which activation to use on the output
    neuron(s) of the linear layer. Currently supported are ``linear``,
    ``relu``, ``softplus``. If empty, ``linear`` is used.
+-  ``mc_dropout``: True/False. Wheter Monte-Carlo dropout is used to 
+   sample during inference. 
+   
+GMM head
+~~~~~~~~
+Can be ignored if ``head != 'gmm'``
 
+-  ``n_distributions``: The number of distributions used for the GMM head. 
+-  ``n_samples``: Number of samples generated  (per time-step) from GMM. 
+-  ``negative_sample_handling``: How to account for negative samples. 
+   Possible values are ``none`` for doing nothing, ``clip`` for clipping 
+   the values at zero, and ``truncate`` for resampling values that
+   were drawn below zero. If the last option is chosen, the additional 
+   argument ``negative_sample_max_retries`` controls how often the values 
+   are resampled. 
+-  ``negative_sample_max_retries``: The number of repeated samples for the 
+   ``truncate`` option of the ``negative_sample_max_retries`` argument.
+-  ``mc_dropout``: True/False. Whether Monte-Carlo dropout is used to 
+   sample during inference. 
+
+CMAL head
+~~~~~~~~~
+Can be ignored if ``head != 'cmal'``
+
+-  ``n_distributions``: The number of distributions used for the CMAL head. 
+-  ``n_samples``: Number of samples generated  (per time-step) from CMAL. 
+-  ``negative_sample_handling``: Approach for handling negative sampling. 
+   Possible values are ``none`` for doing nothing, ``clip`` for clipping 
+   the values at zero, and ``truncate`` for resampling values that
+   were drawn below zero. If the last option is chosen, the additional 
+   argument ``negative_sample_max_retries`` controls how often the values 
+   are resampled. 
+-  ``negative_sample_max_retries``: The number of repeated samples for the 
+   ``truncate`` option of the ``negative_sample_max_retries`` argument.
+-  ``mc_dropout``: True/False. Whether Monte-Carlo dropout is used to 
+   sample during inference.    
+
+
+UMAL head
+~~~~~~~~~
+Can be ignored if ``head != 'umal'``
+
+-  ``n_taus``: The number of taus sampled to approximate the 
+   uncountable distributions.
+-  ``umal_extend_batch``: True/False. Whether the batches should be 
+   extended ``n_taus`` times, to account for a specific approximation 
+   density already during the training.
+-  ``tau_down`` The lower sampling bound of asymmetry parameter (should be 
+   above 0, below 1 and smaller than ``tau_up``).
+-  ``tau_up`` The upper sampling bound of asymmetry parameter (should be 
+   above 0, below 1 and larger than ``tau_down``).   
+-  ``n_samples``: Number of samples generated  (per time-step) from UMAL. 
+-  ``negative_sample_handling``: Approach for handling negative sampling. 
+   Possible values are ``none`` for doing nothing, ``clip`` for clipping 
+   the values at zero, and ``truncate`` for resampling values that
+   were drawn below zero. If the last option is chosen, the additional 
+   argument ``negative_sample_max_retries`` controls how often the values 
+   are resampled. 
+-  ``negative_sample_max_retries``: The number of repeated samples for the 
+   ``truncate`` option of the ``negative_sample_max_retries`` argument.
+-  ``mc_dropout``: True/False. Whether Monte-Carlo dropout is used to 
+   sample during inference. 
 
 Multi-timescale training settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -117,6 +207,25 @@ These are used if ``model == mtslstm``.
    current input timescale. In both cases, ``transfer_mtslstm_states``
    can be used to configure hidden and cell state transfer.
 
+Transformer settings
+~~~~~~~~~~~~~~~~~~~~
+
+These are used if ``model == transformer``.
+
+-  ``transformer_nlayers``: Number of multi-head self-attention layers in the 
+   transformer encoder.
+-  ``transformer_positional_encoding_type``: Choices are ``[sum, concatenate]``.
+   Used to change the way that the positional encoding is used in transformer
+   embedding layer. `sum` means that the positional encoding is added to the values
+   of the inputs for that layer, while `concatenate` means that the embedding is concatenated
+   as additional input features.
+-  ``transformer_dim_feedforward``: Dimension of dense layers used between
+   self-attention layers in transformer encoder.
+-  ``transformer_positional_dropout``: Dropout applied only to the positional
+   encoding before using in transformer encoder.
+-  ``transformer_dropout``: Dropout used in transformer encoder layers.
+-  ``transformer_nhead``: Number of parallel transformer heads.
+
 ODE-LSTM settings
 ~~~~~~~~~~~~~~~~~
 
@@ -133,50 +242,60 @@ These are used if ``model == odelstm``.
    documentation of the ODELSTM class for more details on the frequency
    randomization.
 
+MC-LSTM settings
+~~~~~~~~~~~~~~~~
+
+These are used if ``model == mclstm``.
+
+-  ``mass_inputs``: List of features that are used as mass input in the MC-LSTM model, i.e. whose quantity is conserved
+   over time. Currently, the MC-LSTM configuration implemented here only supports a single mass input. Make sure to
+   exclude this feature from the default normalization (see :ref:`MC-LSTM <MC-LSTM>` description).
+
 Embedding network settings
 --------------------------
 
-These settings apply to small fully connected networks that are used in
-various places, such as the embedding network for static features in the
-``embcudalstm`` model or as an optional extended input gate network in 
-the ``ealstm`` model. For all other models, these settings can be ignored.
-If specified, but the ``cudalstm`` model is selected, the code will print a 
-warning.
+These settings define fully connected networks that are used in various places, such as the embedding network
+for static or dynamic features in the single-frequency models or as an optional extended input gate network in
+the EA-LSTM model. For multi-timescale models, these settings can be ignored.
 
--  ``embedding_hiddens``: List of integers that define the number of
-   neurons per layer in the fully connected network. The last number is
-   the number of output neurons.
+- ``statics_embedding``: None (default) or a dict that defines the embedding network for static inputs.
+   The dictionary can have the following keys:
 
--  ``embedding_activation``: activation function of embedding network
-   (currently only ``tanh`` is supported). The activation function is
-   not applied to the output neurons, which always have a linear
-   activation function. A activation function for the output neurons has
-   to be applied in the main model class.
+   - ``type`` (default 'fc'): Type of the embedding net. Currently, only 'fc' for fully-connected net is supported.
+   - ``hiddens``: List of integers that define the number of neurons per layer in the fully connected network.
+     The last number is the number of output neurons. Must have at least length one.
+   - ``activation`` (default 'tanh'): activation function of the network. Supported values are 'tanh', 'sigmoid', 'linear'.
+     The activation function is not applied to the output neurons, which always have a linear activation function.
+     An activation function for the output neurons has to be applied in the main model class.
+   - ``dropout`` (default 0.0): Dropout rate applied to the embedding network.
 
--  ``embedding_dropout``: Dropout rate applied to the embedding network
+  Note that for EA-LSTM, there will always be an additional linear layer that maps to the EA-LSTM's hidden size. This
+  means that the the embedding layer output size does not have to be equal to ``hidden_size``.
+
+- ``dynamics_embedding``: None (default) or a dict that defines the embedding network for dynamic inputs. See ``statics_embedding``
+  for a description of the dictionary structure.
 
 Training settings
 -----------------
 
 -  ``optimizer``: Specify which optimizer to use. Currently supported
    is Adam (standard). New optimizers can be added
-   `here <https://neuralhydrology.readthedocs.io/en/latest/api/neuralhydrology.training.html#neuralhydrology.training.get_optimizer>`__.
+   :py:func:`here <neuralhydrology.training.get_optimizer>`.
 
 -  ``loss``: Which loss to use. Currently supported are ``MSE``,
-   ``NSE``, ``WeightedNSE``, ``RMSE``. New losses can be added
-   `here <https://neuralhydrology.readthedocs.io/en/latest/api/neuralhydrology.training.loss.html>`__.
-   The ``WeightedNSE`` is especially for multi-target 
-   settings. Use ``target_loss_weights`` to specify per-target
-   weights.
+   ``NSE``, ``RMSE``, ``GMMLoss``, ``CMALLoss``, and ``UMALLoss``. New 
+   losses can be added :py:mod:`here <neuralhydrology.training.loss>`.
 
--  ``target_loss_weights``: Only necessary if ``loss == WeightedNSE``. A list 
-   of float values specifying the per-target loss weight. The order of the 
-   weights corresponds to the order of the ``target_variables``.
+-  ``target_loss_weights``: A list of float values specifying the 
+   per-target loss weight, when training on multiple targets at once. 
+   Can be combined with any loss. By default, the weight of each target
+   is ``1/n`` with ``n`` being the number of target variables. The order 
+   of the weights corresponds to the order of the ``target_variables``.
 
 -  ``regularization``: List of optional regularization terms. Currently
    supported is ``tie_frequencies``, which couples the predictions of
    all frequencies via an MSE term. New regularizations can be added
-   `here <https://neuralhydrology.readthedocs.io/en/latest/api/neuralhydrology.training.regularization.html>`__.
+   :py:mod:`here <neuralhydrology.training.regularization>`.
 
 -  ``learning_rate``: Learning rate. Can be either a single number (for
    a constant learning rate) or a dictionary. If it is a dictionary, the
@@ -306,12 +425,12 @@ Data settings
 
 -  ``lagged_features``: Can be used to add a lagged copy of another
    feature to the list of available input/output features. Has to be a
-   dictionary mapping from strings to int, where the string specifies the
-   feature name and the int the number of lagged time steps. Those values
+   dictionary mapping from strings to int or a list of ints, where the string 
+   specifies the feature name and the int(s) the number of lagged time steps. Those values
    can be positive or negative (see
    `pandas shift <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.shift.html>`__
-   for details). We append ``_shiftN`` to each lagged feature, where `N`
-   is the shift count.
+   for details). If a list of integers is provided, only unique values are considered.
+   We append ``_shiftN`` to each lagged feature, where `N` is the shift count.
 
 -  ``custom_normalization``: Has to be a dictionary, mapping from
    time series feature names to ``centering`` and/or ``scaling``. Using
@@ -335,14 +454,21 @@ Data settings
    is used as static input, the value to use for specific sample should
    be in same row (datetime) as the target discharge value.
 
--  ``static_inputs``: Columns of the DataFrame loaded with the
-   ``additional_feature_files`` that should be used as static feature.
+-  ``evolving_attributes``: Columns of the DataFrame loaded with the
+   ``additional_feature_files`` that should be used as "static" features.
+   These values will be used as static inputs, but they can evolve over time.
+   Convention: The value to use for a specific input sequence should be in the
+   same row (datetime) as the last time step of that sequence.
    Names must match the column names in the DataFrame. Leave empty to
    not use any additional static feature.
 
 -  ``use_basin_id_encoding``: True/False. If True, creates a
    basin-one-hot encoding as a(n) (additional) static feature vector for
    each sample.
+
+-  ``static_attributes``: Which static attributes to use (e.g., from the static camels attributes for the CAMELS
+   dataset). Leave empty if none should be used. For hydroatlas attributes, use ``hydroatlas_attributes`` instead.
+   Names must match the exact names as defined in the data set.
 
 -  ``hydroatlas_attributes``: Which HydroATLAS attributes to use. Leave
    empty if none should be used. Names must match the exact names as
@@ -357,7 +483,3 @@ Can be ignored if ``dataset not in ['camels_us', 'hourly_camels_us']``
    correspond to forcing products in the camels data set. Also supports
    ``maurer_extended``, ``nldas_extended``, and (for
    ``hourly_camels_us``) ``nldas_hourly``.
-
--  ``camels_attributes``: Which CAMELS attributes to use. Leave empty if
-   none should be used. Names must match the exact names as defined in
-   the data set.

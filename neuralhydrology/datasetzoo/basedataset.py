@@ -6,6 +6,8 @@ from typing import List, Dict, Union
 
 import numpy as np
 import pandas as pd
+from pandas.tseries import frequencies
+from pandas.tseries.frequencies import to_offset
 import torch
 import xarray
 from numba import NumbaPendingDeprecationWarning
@@ -41,7 +43,7 @@ class BaseDataset(Dataset):
         appropriate basin file, corresponding to the `period`.
     additional_features : List[Dict[str, pd.DataFrame]], optional
         List of dictionaries, mapping from a basin id to a pandas DataFrame. This DataFrame will be added to the data
-        loaded from the dataset and all columns are available as 'dynamic_inputs', 'static_inputs' and
+        loaded from the dataset and all columns are available as 'dynamic_inputs', 'evolving_attributes' and
         'target_variables'
     id_to_int : Dict[str, int], optional
         If the config argument 'use_basin_id_encoding' is True in the config and period is either 'validation' or
@@ -230,7 +232,14 @@ class BaseDataset(Dataset):
 
     def _add_lagged_features(self, df: pd.DataFrame) -> pd.DataFrame:
         for feature, shift in self.cfg.lagged_features.items():
-            df[f"{feature}_shift{shift}"] = df[feature].shift(periods=shift, freq="infer")
+            if isinstance(shift, list):
+                # only consider unique shift values, otherwise we have columns with identical names
+                for s in set(shift):
+                    df[f"{feature}_shift{s}"] = df[feature].shift(periods=s, freq="infer")
+            elif isinstance(shift, int):
+                df[f"{feature}_shift{shift}"] = df[feature].shift(periods=shift, freq="infer")
+            else:
+                raise ValueError("The value of the 'lagged_features' arg must be either an int or a list of ints")
         return df
 
     def _load_or_create_xarray_dataset(self) -> xarray.Dataset:
@@ -239,7 +248,8 @@ class BaseDataset(Dataset):
             data_list = []
 
             # list of columns to keep, everything else will be removed to reduce memory footprint
-            keep_cols = self.cfg.target_variables + self.cfg.static_inputs
+            keep_cols = self.cfg.target_variables + self.cfg.evolving_attributes + self.cfg.mass_inputs
+
             if isinstance(self.cfg.dynamic_inputs, list):
                 keep_cols += self.cfg.dynamic_inputs
             else:
@@ -275,17 +285,35 @@ class BaseDataset(Dataset):
                 native_frequency = utils.infer_frequency(df.index)
                 if not self.frequencies:
                     self.frequencies = [native_frequency]  # use df's native resolution by default
-                if any([pd.to_timedelta(freq) < pd.to_timedelta(native_frequency) for freq in self.frequencies]):
+
+                # Assert that the used frequencies are lower or equal than the native frequency. There may be cases
+                # where our logic cannot determine whether this is the case, because pandas might return an exotic
+                # native frequency. In this case, all we can do is print a warning and let the user check themselves.
+                try:
+                    freq_vs_native = [utils.compare_frequencies(freq, native_frequency) for freq in self.frequencies]
+                except ValueError:
+                    LOGGER.warning('Cannot compare provided frequencies with native frequency. '
+                                   'Make sure the frequencies are not higher than the native frequency.')
+                    freq_vs_native = []
+                if any(comparison > 1 for comparison in freq_vs_native):
                     raise ValueError(f'Frequency is higher than native data frequency {native_frequency}.')
 
-                # get maximum warmup-offset across all frequencies
-                offset = max([(self.seq_len[i] - self._predict_last_n[i]) * pd.to_timedelta(freq)
-                              for i, freq in enumerate(self.frequencies)])
+                # used to get the maximum warmup-offset across all frequencies. We don't use to_timedelta because it
+                # does not support all frequency strings. We can't calculate the maximum offset here, because to
+                # compare offsets, they need to be anchored to a specific date (here, the start date).
+                offsets = [(self.seq_len[i] - self._predict_last_n[i]) * to_offset(freq)
+                           for i, freq in enumerate(self.frequencies)]
 
                 # create xarray data set for each period slice of the specific basin
                 for i, (start_date, end_date) in enumerate(zip(start_dates, end_dates)):
-                    # add warmup period, so that we can make prediction at the first time step specified by period
-                    warmup_start_date = start_date - offset
+                    # if the start date is not aligned with the frequency, the resulting datetime indices will be off
+                    if not all(to_offset(freq).is_on_offset(start_date) for freq in self.frequencies):
+                        misaligned = [freq for freq in self.frequencies if not to_offset(freq).is_on_offset(start_date)]
+                        raise ValueError(f'start date {start_date} is not aligned with frequencies {misaligned}.')
+                    # add warmup period, so that we can make prediction at the first time step specified by period.
+                    # offsets has the warmup offset needed for each frequency; the overall warmup starts with the
+                    # earliest date, i.e., the largest offset across all frequencies.
+                    warmup_start_date = min(start_date - offset for offset in offsets)
                     df_sub = df[warmup_start_date:end_date]
 
                     # make sure the df covers the full date range from warmup_start_date to end_date, filling any gaps
@@ -373,20 +401,21 @@ class BaseDataset(Dataset):
             # converting from xarray to pandas DataFrame because resampling is much faster in pandas.
             df_native = xr.sel(basin=basin).to_dataframe()
             for freq in self.frequencies:
+                # make sure that possible mass inputs are sorted to the beginning of the dynamic feature list
                 if isinstance(self.cfg.dynamic_inputs, list):
-                    dynamic_cols = self.cfg.dynamic_inputs
+                    dynamic_cols = self.cfg.mass_inputs + self.cfg.dynamic_inputs
                 else:
-                    dynamic_cols = self.cfg.dynamic_inputs[freq]
+                    dynamic_cols = self.cfg.mass_inputs + self.cfg.dynamic_inputs[freq]
 
                 df_resampled = df_native[dynamic_cols + self.cfg.target_variables +
-                                         self.cfg.static_inputs].resample(freq).mean()
+                                         self.cfg.evolving_attributes].resample(freq).mean()
                 x_d[freq] = df_resampled[dynamic_cols].values
                 y[freq] = df_resampled[self.cfg.target_variables].values
-                if self.cfg.static_inputs:
-                    x_s[freq] = df_resampled[self.cfg.static_inputs].values
+                if self.cfg.evolving_attributes:
+                    x_s[freq] = df_resampled[self.cfg.evolving_attributes].values
 
                 # number of frequency steps in one lowest-frequency step
-                frequency_factor = pd.to_timedelta(lowest_freq) // pd.to_timedelta(freq)
+                frequency_factor = int(utils.get_frequency_factor(lowest_freq, freq))
                 # array position i is the last entry of this frequency that belongs to the lowest-frequency sample i.
                 frequency_maps[freq] = np.arange(len(df_resampled) // frequency_factor) \
                                        * frequency_factor + (frequency_factor - 1)
@@ -449,9 +478,15 @@ class BaseDataset(Dataset):
         dfs = []
 
         # load dataset specific attributes from the subclass
-        df = self._load_attributes()
+        if self.cfg.static_attributes:
+            df = self._load_attributes()
 
-        if df is not None:
+            # remove all attributes not defined in the config
+            missing_attrs = [attr for attr in self.cfg.static_attributes if attr not in df.columns]
+            if len(missing_attrs) > 0:
+                raise ValueError(f'Static attributes {missing_attrs} are missing.')
+            df = df[self.cfg.static_attributes]
+
             # in case of training (not finetuning) check for NaNs in feature std.
             if self._compute_scaler:
                 utils.attributes_sanity_check(df=df)
@@ -467,7 +502,7 @@ class BaseDataset(Dataset):
             df = pd.concat(dfs, axis=1)
 
             # check if any attribute specified in the config is not available in the dataframes
-            combined_attributes = self.cfg.camels_attributes + self.cfg.hydroatlas_attributes
+            combined_attributes = self.cfg.static_attributes + self.cfg.hydroatlas_attributes
             missing_columns = [attr for attr in combined_attributes if attr not in df.columns]
             if missing_columns:
                 raise ValueError(f"The following attributes are not available in the dataset: {missing_columns}")
@@ -500,8 +535,8 @@ class BaseDataset(Dataset):
 
         xr = self._load_or_create_xarray_dataset()
 
-        if "NSE" in self.cfg.loss:
-            # get the std of the discharge for each basin, which is needed for the NSE loss.
+        if self.cfg.loss.lower() in ['nse', 'weightednse']:
+            # get the std of the discharge for each basin, which is needed for the (weighted) NSE loss.
             self._calculate_per_basin_std(xr)
 
         if self._compute_scaler:
@@ -524,7 +559,7 @@ class BaseDataset(Dataset):
                 # check for custom treatment of the feature center
                 if key == "centering":
                     if (val is None) or (val.lower() == "none"):
-                        self.scaler["xarray_feature_center"][feature] = 0.0
+                        self.scaler["xarray_feature_center"][feature] = np.float32(0.0)
                     elif val.lower() == "median":
                         self.scaler["xarray_feature_center"][feature] = xr[feature].median(skipna=True)
                     elif val.lower() == "min":
@@ -538,7 +573,7 @@ class BaseDataset(Dataset):
                 # check for custom treatment of the feature scale
                 elif key == "scaling":
                     if (val is None) or (val.lower() == "none"):
-                        self.scaler["xarray_feature_scale"][feature] = 1.0
+                        self.scaler["xarray_feature_scale"][feature] = np.float32(1.0)
                     elif val == "minmax":
                         self.scaler["xarray_feature_scale"][feature] = xr[feature].max(skipna=True) - \
                                                                        xr[feature].m(skipna=True)
