@@ -80,13 +80,13 @@ def get_ensemble_path(
 def get_all_station_ds(res_fp: Path) -> xr.Dataset:
     res_dict = pickle.load(res_fp.open("rb"))
     stations = [k for k in res_dict.keys()]
-
     # should only contain one frequency
     freq = [k for k in res_dict[stations[0]].keys()]
     assert len(freq) == 1
     freq = freq[0]
 
     #  extract the raw results
+    all_xr_objects: List[xr.Dataset] = []
     for station_id in tqdm(stations):
         try:
             xr_obj = (
@@ -95,10 +95,14 @@ def get_all_station_ds(res_fp: Path) -> xr.Dataset:
         except ValueError:
             # ensemble mode does not have "time_step" dimension
             xr_obj = res_dict[station_id][freq]["xr"].rename({"datetime": "date"})
-        
-    xr_obj = xr_obj.expand_dims({"station_id": [station_id]})
     
-    return xr_obj
+        xr_obj = xr_obj.expand_dims({"station_id": [station_id]})
+        all_xr_objects.append(xr_obj)
+    
+    #  merge all stations into one xarray object
+    ds = xr.concat(all_xr_objects, dim="station_id")
+    
+    return ds
 
 
 def calculate_all_error_metrics(
