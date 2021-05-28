@@ -101,7 +101,7 @@ def get_all_station_ds(res_fp: Path) -> xr.Dataset:
     return xr_obj
 
 
-def calculate_all_error_metrics(preds: xr.Dataset, basin_coord: str = "basin", time_coord: str = "date") -> pd.DataFrame:
+def calculate_all_error_metrics(preds: xr.Dataset, basin_coord: str = "basin", time_coord: str = "date", obs_var: str = "discharge_spec_obs", sim_var: "discharge_spec_sim") -> pd.DataFrame:
     all_errors: List[pd.DataFrame] = []
     missing_data: List[str] = []
 
@@ -110,8 +110,8 @@ def calculate_all_error_metrics(preds: xr.Dataset, basin_coord: str = "basin", t
         pbar.set_postfix_str(sid)
         try:
             errors = calculate_all_metrics(
-                sim=preds["sim"].rename({basin_coord: "station_id", time_coord: "date"}).sel(station_id=sid),
-                obs=preds["obs"].rename({basin_coord: "station_id", time_coord: "date"}).sel(station_id=sid)
+                sim=preds[sim_var].rename({basin_coord: "station_id", time_coord: "date"}).sel(station_id=sid),
+                obs=preds[obs_var].rename({basin_coord: "station_id", time_coord: "date"}).sel(station_id=sid)
             )
             all_errors.append(pd.DataFrame({sid: errors}).T)
         except AllNaNError:
