@@ -101,23 +101,23 @@ def get_all_station_ds(res_fp: Path) -> xr.Dataset:
     return xr_obj
 
 
-def calculate_all_error_metrics(preds: xr.Dataset) -> pd.DataFrame:
+def calculate_all_error_metrics(preds: xr.Dataset, basin_coord: str = "basin", time_coord: str = "date") -> pd.DataFrame:
     all_errors: List[pd.DataFrame] = []
     missing_data: List[str] = []
 
-    pbar = tqdm(preds["pixel"].values, desc="Calculating Errors:")
+    pbar = tqdm(preds[basin_coord].values, desc="Calculating Errors:")
     for sid in pbar:
         pbar.set_postfix_str(sid)
         try:
             errors = calculate_all_metrics(
-                sim=preds["sim"].rename({"pixel": "station_id", "time": "date"}).sel(station_id=sid),
-                obs=preds["obs"].rename({"pixel": "station_id", "time": "date"}).sel(station_id=sid)
+                sim=preds["sim"].rename({basin_coord: "station_id", time_coord: "date"}).sel(station_id=sid),
+                obs=preds["obs"].rename({basin_coord: "station_id", time_coord: "date"}).sel(station_id=sid)
             )
             all_errors.append(pd.DataFrame({sid: errors}).T)
         except AllNaNError:
             missing_data.append(sid)
 
-    errors = pd.concat(all_errors).to_xarray().rename({"index": "pixel"})
+    errors = pd.concat(all_errors).to_xarray().rename({"index": basin_coord})
     return errors
 
 
