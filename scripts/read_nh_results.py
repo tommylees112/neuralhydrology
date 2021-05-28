@@ -96,12 +96,18 @@ def get_all_station_ds(res_fp: Path) -> xr.Dataset:
             # ensemble mode does not have "time_step" dimension
             xr_obj = res_dict[station_id][freq]["xr"].rename({"datetime": "date"})
         
-        xr_obj = xr_obj.expand_dims({"station_id": [station_id]})
+    xr_obj = xr_obj.expand_dims({"station_id": [station_id]})
     
     return xr_obj
 
 
-def calculate_all_error_metrics(preds: xr.Dataset, basin_coord: str = "basin", time_coord: str = "date", obs_var: str = "discharge_spec_obs", sim_var: str = "discharge_spec_sim") -> pd.DataFrame:
+def calculate_all_error_metrics(
+    preds: xr.Dataset, 
+    basin_coord: str = "basin", 
+    time_coord: str = "date", 
+    obs_var: str = "discharge_spec_obs", 
+    sim_var: str = "discharge_spec_sim",
+) -> xr.Dataset:
     all_errors: List[pd.DataFrame] = []
     missing_data: List[str] = []
 
