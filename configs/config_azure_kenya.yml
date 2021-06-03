@@ -72,6 +72,15 @@ statics_embedding:
 
 # define embedding network for dynamic inputs
 dynamics_embedding:
+  type: fc
+  # define number of neurons per layer in the FC network used as embedding network
+  hiddens:
+    - 30
+    - 5
+  # activation function of embedding network
+  activation: tanh
+  # dropout applied to embedding network
+  dropout: 0.4
 
 # ----> MTSLSTM settings <----
 
