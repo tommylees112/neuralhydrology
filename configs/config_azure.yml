@@ -1,7 +1,7 @@
 # --- Experiment configurations --------------------------------------------------------------------
 
 # experiment name, used as folder name
-experiment_name: azure_nh_runoff
+experiment_name: azure_nh_runoff_30EPOCH
 
 # place to store run directory (if empty runs are stored in code_dir/runs/)
 run_dir: /datadrive/data/runs
@@ -148,7 +148,7 @@ learning_rate:
 batch_size: 256
 
 # Number of training epochs
-epochs: 5
+epochs: 30
 
 # adds noise with given std to the labels during training. Leave empty or set to 0 if not used.
 target_noise_std: 0.005
