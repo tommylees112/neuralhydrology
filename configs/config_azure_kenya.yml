@@ -211,7 +211,8 @@ save_train_data: False
 dynamic_nc_file: /home/tommy/spatio_temporal/data/kenya.nc
 static_nc_file: 
 pixel_dims: 
-  - station_id
+  - lat
+  - lon
 
 # Forcing product [daymet, maurer, maurer_extended, nldas, nldas_extended, nldas_hourly]
 # can be either a list of forcings or a single forcing product
