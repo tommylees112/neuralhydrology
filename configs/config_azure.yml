@@ -1,15 +1,15 @@
 # --- Experiment configurations --------------------------------------------------------------------
 
 # experiment name, used as folder name
-experiment_name: nh_runoff
+experiment_name: azure_nh_runoff
 
 # place to store run directory (if empty runs are stored in code_dir/runs/)
 run_dir: /datadrive/data/runs
 
 # files to specify training, validation and test basins (relative to code root or absolute path)
-train_basin_file: data/camels_gb_basin_list.txt
-validation_basin_file: data/camels_gb_basin_list.txt
-test_basin_file: data/camels_gb_basin_list.txt
+train_basin_file: /home/tommy/neural_hydrology/data/camels_gb_basin_list.txt
+validation_basin_file: /home/tommy/neural_hydrology/data/camels_gb_basin_list.txt
+test_basin_file: /home/tommy/neural_hydrology/data/camels_gb_basin_list.txt
 
 # training, validation and test time periods (format = 'dd/mm/yyyy')
 train_start_date: '01/01/1988'
@@ -72,16 +72,6 @@ statics_embedding:
 
 # define embedding network for dynamic inputs
 dynamics_embedding:
-  type: fc
-  # define number of neurons per layer in the FC network used as embedding network
-  hiddens:
-    - 30
-    - 20
-    - 64
-  # activation function of embedding network
-  activation: tanh
-  # dropout applied to embedding network
-  dropout: 0.0
 
 # ----> MTSLSTM settings <----
 
