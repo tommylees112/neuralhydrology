@@ -75,8 +75,8 @@ dynamics_embedding:
   type: fc
   # define number of neurons per layer in the FC network used as embedding network
   hiddens:
-    - 30
-    - 5
+    - 3
+    - 32
   # activation function of embedding network
   activation: tanh
   # dropout applied to embedding network
@@ -126,7 +126,7 @@ transformer_nheads: 4
 # ----> General settings <----
 
 # Number of cell states of the LSTM
-hidden_size: 64
+hidden_size: 16
 
 # Initial bias value of the forget gate
 initial_forget_bias: 3
@@ -239,6 +239,10 @@ forcings:
 dynamic_inputs:
   - precip
   - vci_lagged
+  - t2m
+  - p
+  - SMsurf
+  - pev
 
 # which columns to use as target
 target_variables:
