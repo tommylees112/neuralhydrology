@@ -1,7 +1,7 @@
 # --- Experiment configurations --------------------------------------------------------------------
 
 # experiment name, used as folder name
-experiment_name: azure_nh_runoff
+experiment_name: azure_nh_kenya
 
 # place to store run directory (if empty runs are stored in code_dir/runs/)
 run_dir: /datadrive/data/runs
