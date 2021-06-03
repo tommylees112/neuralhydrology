@@ -240,7 +240,7 @@ dynamic_inputs:
   - precip
   - vci_lagged
   - t2m
-  - p
+  - tp
   - SMsurf
   - pev
 
