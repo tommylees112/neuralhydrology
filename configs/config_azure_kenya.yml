@@ -33,7 +33,7 @@ device: cuda:0
 # --- Validation configuration ---------------------------------------------------------------------
 
 # specify after how many epochs to perform validation
-validate_every: 1
+validate_every: 30
 
 # specify how many random basins to use for validation
 validate_n_random_basins: 4
