@@ -147,7 +147,7 @@ dynamic_inputs:
 
 # Which CAMELS attributes to use. Leave empty if none should be used
 # static_inputs:
-camels_attributes:
+static_attributes:
 - area
 - elev_mean
 - dpsbar
@@ -172,9 +172,7 @@ camels_attributes:
 - low_prec_dur
 
 
-# clip negative predictions to zero for all variables listed below. Should be a list, even for single variables.
 
-- discharge_spec
 
 # zero_center_target: True -- DEPRECEATED
 custom_normalization:
