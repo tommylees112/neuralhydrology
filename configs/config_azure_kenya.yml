@@ -208,7 +208,7 @@ data_dir: /home/tommy/spatio_temporal/data
 save_train_data: False
 
 # If existing train data file exist, specify path to the pickle file here
-dynamic_nc_file: /home/tommy/spatio_temporal/data/kenya.nc
+dynamic_nc_file: /home/tommy/spatio_temporal/data/kenya2.nc
 static_nc_file: 
 pixel_dims: 
   - lat
