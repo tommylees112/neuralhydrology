@@ -76,8 +76,7 @@ def get_ensemble_path(
     return res_fp
 
 
-def get_all_station_ds(res_fp: Path) -> xr.Dataset:
-    res_dict = pickle.load(res_fp.open("rb"))
+def _load_dict_to_xarray(res_dict: Dict[str, Dict[str, Dict[str, xr.Dataset]]]) -> xr.Dataset:
     stations = [k for k in res_dict.keys()]
     # should only contain one frequency
     freq = [k for k in res_dict[stations[0]].keys()]
@@ -100,7 +99,12 @@ def get_all_station_ds(res_fp: Path) -> xr.Dataset:
     
     #  merge all stations into one xarray object
     ds = xr.concat(all_xr_objects, dim="station_id")
-    
+    return ds 
+
+
+def get_all_station_ds(res_fp: Path) -> xr.Dataset:
+    res_dict = pickle.load(res_fp.open("rb"))
+    ds = _load_dict_to_xarray(res_dict)
     return ds
 
 
