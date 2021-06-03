@@ -121,7 +121,7 @@ dynamics_embedding:
 dataset: camels_gb
 
 # Path to data set root
-data_dir: /home/tommy/spatio_temporal/data/CAMELS_GB_DATASET
+data_dir: /datadrive/data/CAMELS_GB_DATASET
 
 # Path to pre-processed hdf5 file here (and corresponding scaler pickle file). Leave empty to create
 # new hdf5 file
