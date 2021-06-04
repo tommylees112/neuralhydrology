@@ -149,4 +149,9 @@ class PixelDataset(BaseDataset):
         # Add your code for data loading here. #
         ########################################
         df = self.static.to_dataframe().reset_index().set_index("basin")
+        if self.basins:
+            if any(b not in df.index for b in self.basins):
+                raise ValueError('Some basins are missing static attributes.')
+            df = df.loc[self.basins]
+
         return df
