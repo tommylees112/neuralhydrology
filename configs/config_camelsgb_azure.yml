@@ -1,7 +1,7 @@
 # --- Experiment configurations --------------------------------------------------------------------
 
 # experiment name, used as folder name
-experiment_name: azure_nh_runoff_30EPOCH_PIXEL_ALL_STATIC
+experiment_name: azure_nh_runoff_30EPOCH_CAMELSGB
 
 # place to store run directory (if empty runs are stored in code_dir/runs/)
 run_dir: /datadrive/data/runs
@@ -199,19 +199,15 @@ save_validation_results: False
 # --- Data configurations --------------------------------------------------------------------------
 
 # which data set to use [camels_us, camels_gb, global, hourly_camels_us, camels_cl, generic, pixel]
-dataset: pixel
+dataset: camels_gb
 
 # Path to data set root
-data_dir: /home/tommy/spatio_temporal/data
+data_dir: /datadrive/data/CAMELS_GB_DATASET
 
 # Set to True, if train data file should be save to disk. If empty or False, train data is not saved.
 save_train_data: False
 
 # If existing train data file exist, specify path to the pickle file here
-dynamic_nc_file: /home/tommy/spatio_temporal/data/ALL_dynamic_ds.nc
-static_nc_file: /home/tommy/spatio_temporal/data/camels_static.nc
-pixel_dims: 
-  - station_id
 
 # Forcing product [daymet, maurer, maurer_extended, nldas, nldas_extended, nldas_hourly]
 # can be either a list of forcings or a single forcing product
@@ -238,7 +234,6 @@ target_variables:
 # clip negative predictions to zero for all variables listed below. Should be a list, even for single variables.
 clip_targets_to_zero:
   - discharge_spec
-
 
 # Which CAMELS attributes to use. Leave empty if none should be used
 static_attributes:
