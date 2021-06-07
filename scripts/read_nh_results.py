@@ -7,6 +7,9 @@ import argparse
 from typing import Tuple, Dict, Optional, DefaultDict, Union, List
 from collections import defaultdict
 from tqdm import tqdm
+import re
+import pickle
+import pprint
 
 from neuralhydrology.evaluation import RegressionTester as Tester
 from neuralhydrology.utils.config import Config
@@ -264,6 +267,61 @@ def main(
         else:
             df = ds.to_dataframe().reset_index()
         df.to_csv(test_dir / fname)
+
+
+def read_ensemble_member_results(ensemble_dir: Path) -> xr.Dataset:
+    """
+    Read all of the test/model_epoch0{epoch}/*_results.p dictionaries
+     into one xarray Dataset.
+    """
+    paths = [d for d in (ensemble_dir).glob("**/*_results.p")]
+    unique = np.unique([p.parent.name for p in paths])
+    assert len(unique) == 1, f"Expected one epoch of test model results. Got: {unique}\nFrom {pprint.pformat(paths)}"
+    ps = [pickle.load(p.open("rb")) for p in paths]
+
+    output_dict = {}
+    for i, res_dict in tqdm(enumerate(ps), desc="Loading Ensemble Members"):
+        stations = [k for k in res_dict.keys()]
+        freq = "1D"
+        all_xr_objects: List[xr.Dataset] = []
+
+        # get the ensemble number
+        m = re.search("epoch\d+", paths[i].__str__())
+        try:
+            name = m.group(0)
+        except AttributeError as e:
+            print("found ensemble mean")
+            name = "mean"
+
+        for station_id in stations:
+            #  extract the raw results
+            try:
+                xr_obj = (
+                    res_dict[station_id][freq]["xr"].isel(time_step=0).drop("time_step")
+                )
+            except ValueError:
+                # ensemble mode does not have "time_step" dimension
+                xr_obj = res_dict[station_id][freq]["xr"].rename({"datetime": "date"})
+            xr_obj = xr_obj.expand_dims({"station_id": [station_id]}).rename(
+                {"date": "time"}
+            )
+            all_xr_objects.append(xr_obj)
+
+        preds = xr.concat(all_xr_objects, dim="station_id")
+        preds["station_id"] = [int(sid) for sid in preds["station_id"]]
+        preds = preds.rename({"discharge_spec_obs": "obs", "discharge_spec_sim": "sim"})
+
+        output_dict[name] = preds
+
+    # return as one dataset
+    all_ds = []
+    for key in output_dict.keys():
+        all_ds.append(
+            output_dict[key].assign_coords({"member": key}).expand_dims("member")
+        )
+    ds = xr.concat(all_ds, dim="member")
+
+    return ds
 
 
 if __name__ == "__main__":
