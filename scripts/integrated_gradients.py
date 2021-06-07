@@ -102,7 +102,7 @@ def main(cfg: Config, basins: Optional[List[str]] = None):
     # GET the list of training basins = basin_file
     if cfg.dataset == "pixel":
         assert basins is not None
-        basins = [sid for sid in preds.station_id.values]
+        # basins = [sid for sid in preds.station_id.values]
     else:
         basins = load_basin_file(cfg.train_basin_file)
 
