@@ -303,7 +303,7 @@ def read_multi_experiment_results(ensemble_dir: Path, ensemble_members: bool = T
             # expect to find a datetime stamp in the name
             m = re.search("_\d+_\d+", paths[i].__str__())
             try:
-                name = m.group(0)
+                _ = m.group(0)
             except AttributeError as e:
                 print("Found non-standard member dictionary")
                 print(f"Skipping: {paths[i]}")
