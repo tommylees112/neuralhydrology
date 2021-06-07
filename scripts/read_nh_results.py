@@ -340,6 +340,28 @@ def read_multi_experiment_results(ensemble_dir: Path, ensemble_members: bool = T
     return ds
 
 
+def calculate_member_errors(
+    member_ds: xr.Dataset,
+    basin_coord: str = "basin", 
+    time_coord: str = "date", 
+    obs_var: str = "discharge_spec_obs", 
+    sim_var: str = "discharge_spec_sim",
+) -> xr.Dataset:
+    assert "member" in member_ds.coords
+    
+    all_errors = []
+    print(f"Calculating Errors for {len(member_ds['member'].values)} members")
+    for member in member_ds["member"].values:
+        preds = member_ds.sel(member=member)
+        err = calculate_all_error_metrics(preds, basin_coord=basin_coord, time_coord=time_coord, obs_var=obs_var, sim_var=sim_var,)
+        err = err.assign_coords(member=member).expand_dims("member")
+        all_errors.append(err)
+
+    all_errors = xr.merge(all_errors)
+    
+    return all_errors
+
+
 if __name__ == "__main__":
     #  read cmd line arguments
     args = get_args()
