@@ -195,5 +195,8 @@ if __name__ == "__main__":
     cfg = Config(run_dir / "config.yml")
     cfg.run_dir = run_dir
 
+    if cfg.dataset == "pixel":
+        pixels = pd.read_csv("data/camels_gb_pixel_list.txt")
+
     # GET the model
-    main(cfg)
+    main(cfg, basins=pixels)
