@@ -196,8 +196,7 @@ if __name__ == "__main__":
     cfg.run_dir = run_dir
 
     if cfg.dataset == "pixel":
-        pixels = pd.read_csv("data/camels_gb_basin_list.txt")
-    assert False
+        pixels = pd.read_csv("data/camels_gb_basin_list.txt", header=None).loc[:, 0].to_list()
 
     # GET the model
     main(cfg, basins=pixels)
