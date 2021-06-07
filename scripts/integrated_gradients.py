@@ -15,7 +15,10 @@ from neuralhydrology.datasetzoo.basedataset import BaseDataset
 from neuralhydrology.datasetzoo import CamelsGB, PixelDataset
 from neuralhydrology.datautils.utils import load_basin_file
 from scripts.read_model import (get_model, _load_weights)
-
+from scripts.read_nh_results import (
+    get_test_filepath,
+    get_all_station_ds,
+)
 
 
 def _generate_path_input(baseline, x_d, device, m):
@@ -196,7 +199,9 @@ if __name__ == "__main__":
     cfg.run_dir = run_dir
 
     if cfg.dataset == "pixel":
-        pixels = pd.read_csv("data/camels_gb_basin_list.txt", header=None).loc[:, 0].to_list()
+        res_fp = get_test_filepath(run_dir, epoch=30)
+        preds = get_all_station_ds(res_fp)
+        pixels = preds.station_id.values
 
     # GET the model
     main(cfg, basins=pixels)
