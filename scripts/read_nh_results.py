@@ -269,10 +269,14 @@ def main(
         df.to_csv(test_dir / fname)
 
 
-def read_ensemble_member_results(ensemble_dir: Path) -> xr.Dataset:
+def read_multi_experiment_results(ensemble_dir: Path, ensemble_members: bool = True) -> xr.Dataset:
     """
-    Read all of the test/model_epoch0{epoch}/*_results.p dictionaries
+    Read all of the {expt_title}/test/model_epoch0{epoch}/*_results.p dictionaries
      into one xarray Dataset.
+
+    Either read multiple ensemble members of the same experiment
+        - NOTE: the experiment must be named `ensemble{ENS_NUM}`
+    OR read multiple experiments using the experiment titles
     """
     paths = [d for d in (ensemble_dir).glob("**/*_results.p")]
     unique = np.unique([p.parent.name for p in paths])
@@ -286,12 +290,24 @@ def read_ensemble_member_results(ensemble_dir: Path) -> xr.Dataset:
         all_xr_objects: List[xr.Dataset] = []
 
         # get the ensemble number
-        m = re.search("epoch\d+", paths[i].__str__())
-        try:
-            name = m.group(0)
-        except AttributeError as e:
-            print("found ensemble mean")
-            name = "mean"
+        if ensemble_members:
+            m = re.search("ensemble\d+", paths[i].__str__())
+            try:
+                name = m.group(0)
+            except AttributeError as e:
+                print("found ensemble mean")
+                name = "mean"
+        else:
+            # get the experiment title/name
+            name = paths[i].parent.parent.parent.name
+            # expect to find a datetime stamp in the name
+            m = re.search("_\d+_\d+", paths[i].__str__())
+            try:
+                name = m.group(0)
+            except AttributeError as e:
+                print("Found non-standard member dictionary")
+                print(f"Skipping: {paths[i]}")
+                continue
 
         for station_id in stations:
             #  extract the raw results
