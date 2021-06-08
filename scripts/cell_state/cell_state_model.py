@@ -6,13 +6,14 @@ import torch
 from torch import Tensor
 from torch import nn
 from torch.utils.data import DataLoader
-# from copy import deepcopy
+from collections import defaultdict
 import pandas as pd 
 
 import sys
 sys.path.append("/home/tommy/neuralhydrology")
 from neuralhydrology.modelzoo.basemodel import BaseModel
 from scripts.cell_state.cell_state_dataset import CellStateDataset, get_train_test_dataset, train_validation_split
+from scripts.cell_state.analysis import (get_all_models_weights, calculate_raw_correlations)
 from neuralhydrology.modelzoo.head import get_head
 from neuralhydrology.modelzoo.basemodel import BaseModel
 from neuralhydrology.utils.config import Config
@@ -142,8 +143,6 @@ def to_xarray(predictions: Dict[str, List]) -> xr.Dataset:
 
 
 def calculate_predictions(model: BaseModel, loader: DataLoader) -> xr.Dataset:
-    from collections import defaultdict
-
     predictions = defaultdict(list)
 
     model.eval()
@@ -175,16 +174,29 @@ if __name__ == "__main__":
     train_test = True
     train_val = False
 
-    train_losses, model, test_loader = train_model_loop(
-        config=cfg,
-        input_data=input_data,
-        target_data=norm_sm["sm"],  # needs to be xr.DataArray
-        train_test=train_test,
-        train_val=train_val,
-        return_loaders=True,
-    )
+    target_features = [v for v in norm_sm.data_vars] else ["sm"]
+    for feature in target_features:
+        train_losses, model, test_loader = train_model_loop(
+            config=cfg,
+            input_data=input_data,
+            target_data=norm_sm[feature],  # needs to be xr.DataArray
+            train_test=train_test,
+            train_val=train_val,
+            return_loaders=True,
+        )
 
-    # store outputs of training process
-    losses_list.append(train_losses)
-    models.append(model)
-    test_loaders.append(test_loader)
+        # store outputs of training process
+        losses_list.append(train_losses)
+        models.append(model)
+        test_loaders.append(test_loader)
+
+    #  run forward pass and convert to xarray object
+    preds = calculate_predictions(model, test_loader)
+
+    # extract weights and biases
+    print("-- Extracting weights and biases --")
+    ws, bs = get_all_models_weights(models)
+
+    #  calculate raw correlations (cell state and values)
+    print("-- Running RAW Correlations --")
+    all_corrs = calculate_raw_correlations(norm_sm, input_data, config=cfg)

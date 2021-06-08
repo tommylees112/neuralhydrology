@@ -119,10 +119,9 @@ def main(cfg: Config, basins: Optional[List[str]] = None):
     #  initialise device
     device = cfg.device
 
-    random.shuffle(basins)
-    # pbar = tqdm(basins, desc="Calculating integrated gradients:")
-    for basin in basins:
-        #     pbar.set_postfix_str(basin)
+    pbar = tqdm(basins, desc="Calculating integrated gradients:")
+    for basin in pbar:
+        pbar.set_postfix_str(basin)
         # output file
         outfile = run_dir / f"integrated_gradients/seq2one_{basin}.p"
 
