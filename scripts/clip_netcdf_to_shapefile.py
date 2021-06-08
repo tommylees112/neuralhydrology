@@ -81,24 +81,18 @@ def create_timeseries_of_masked_datasets(
     return out_ds
 
 
-if __name__ == "__main__":
-    data_dir = Path("/lustre/soge1/projects/crop_yield")
-    shp_data_dir = data_dir / "CAMELS/CAMELS_GB_DATASET"
-    path_to_sm_data = data_dir / "SOIL_MOISTURE/gb_soil_moisture_1234_snow.nc"
-
+def create_camels_basin_timeseries(path_to_sm_data: Path, shp_data_dir: Path) -> xr.Dataset:
     # 1. Load in shapefile and dataset
     shp = shp_data_dir / "Catchment_Boundaries/CAMELS_GB_catchment_boundaries.shp"
     gdf = gpd.read_file(shp)
-    ds = xr.open_dataset(path_to_sm_data).rename(
-        {"latitude": "lat", "longitude": "lon"}
-    )
+    ds = xr.open_dataset(path_to_sm_data)
 
-    #  Ensure that data properly initialised (e.g. CRS is the same)
+    # 2. Ensure that data properly initialised (e.g. CRS is the same)
     ds, gdf = prepare_rio_data(ds, gdf)
     id_column: str = "ID_STRING"
     shape_dimension: str = "station_id"
 
-    #  Create xarray shape masks
+    # 3. Create xarray shape masks
     masks = rasterize_all_geoms(
         ds=ds,
         gdf=gdf,
@@ -107,12 +101,20 @@ if __name__ == "__main__":
         geometry_column="geometry",
     )
 
-    masks.sum(dim=["lat", "lon"])
-
-    #  Create timeseries of mean values
+    # 4. Create timeseries of mean values
     out_ds = create_timeseries_of_masked_datasets(
         ds=ds, masks=masks, shape_dimension=shape_dimension
     )
 
+    return out_ds
+
+
+if __name__ == "__main__":
+    data_dir = Path("/datadrive/data")
+    shp_data_dir = data_dir / "CAMELS_GB_DATASET"
+    path_to_sm_data = data_dir / "esa_cci_sm_gb.nc"
+
+    out_ds = create_camels_basin_timeseries(path_to_sm_data=path_to_sm_data, shp_data_dir=shp_data_dir)
+
     # save the catchment averaged timeseries of soil moisture
-    out_ds.to_netcdf(data_dir / "SOIL_MOISTURE/camels_basin_era5land_variables.nc")
+    out_ds.to_netcdf(data_dir / "camels_basin_ESACCI_sm.nc")
