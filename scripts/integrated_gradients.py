@@ -216,7 +216,8 @@ def get_station_from_name(fp: Path) -> str:
 
 
 def create_xarray_gradients_obj(
-    grads_stn,
+    cfg: Config,
+    grads_stn: np.ndarray,
     basin: str,
     test_date_range: List[pd.Timestamp],
     var_list: List[str] = ["peti", "precip", "temp"],
@@ -263,7 +264,8 @@ def create_gradient_xarray(cfg: Config, run_dir: Path) -> xr.Dataset:
         pbar.set_postfix_str(station_id)
         grads_stn = np.expand_dims(grads, 0)
         gradients = create_xarray_gradients_obj(
-            grads_stn,
+            grads_stn=grads_stn,
+            cfg=cfg,
             basin=station_id,
             var_list=var_list,
             test_date_range=test_date_range,
