@@ -1,4 +1,4 @@
-from pathlib import Path 
+from pathlib import Path
 from typing import Optional
 import torch
 from torch import nn
@@ -11,13 +11,13 @@ def _load_weights(model, cfg: Config, epoch: int = None) -> nn.Module:
     weight_file = _get_weight_file(cfg, epoch)
     print(f"Using the model weights from {weight_file}")
     model.load_state_dict(torch.load(weight_file, map_location=cfg.device))
-    return model 
+    return model
 
 
 def _get_weight_file(cfg: Config, epoch: Optional[int] = None):
     """Get file path to weight file"""
     if epoch is None:
-        weight_file = sorted(list(cfg.run_dir.glob('model_epoch*.pt')))[-1]
+        weight_file = sorted(list(cfg.run_dir.glob("model_epoch*.pt")))[-1]
     else:
         weight_file = cfg.run_dir / f"model_epoch{str(epoch).zfill(3)}.pt"
 

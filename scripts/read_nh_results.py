@@ -79,7 +79,9 @@ def get_ensemble_path(
     return res_fp
 
 
-def _load_dict_to_xarray(res_dict: Dict[str, Dict[str, Dict[str, xr.Dataset]]]) -> xr.Dataset:
+def _load_dict_to_xarray(
+    res_dict: Dict[str, Dict[str, Dict[str, xr.Dataset]]]
+) -> xr.Dataset:
     stations = [k for k in res_dict.keys()]
     # should only contain one frequency
     freq = [k for k in res_dict[stations[0]].keys()]
@@ -96,13 +98,13 @@ def _load_dict_to_xarray(res_dict: Dict[str, Dict[str, Dict[str, xr.Dataset]]]) 
         except ValueError:
             # ensemble mode does not have "time_step" dimension
             xr_obj = res_dict[station_id][freq]["xr"].rename({"datetime": "date"})
-    
+
         xr_obj = xr_obj.expand_dims({"station_id": [station_id]})
         all_xr_objects.append(xr_obj)
-    
+
     #  merge all stations into one xarray object
     ds = xr.concat(all_xr_objects, dim="station_id")
-    return ds 
+    return ds
 
 
 def get_all_station_ds(res_fp: Path) -> xr.Dataset:
@@ -112,10 +114,10 @@ def get_all_station_ds(res_fp: Path) -> xr.Dataset:
 
 
 def calculate_all_error_metrics(
-    preds: xr.Dataset, 
-    basin_coord: str = "basin", 
-    time_coord: str = "date", 
-    obs_var: str = "discharge_spec_obs", 
+    preds: xr.Dataset,
+    basin_coord: str = "basin",
+    time_coord: str = "date",
+    obs_var: str = "discharge_spec_obs",
     sim_var: str = "discharge_spec_sim",
 ) -> xr.Dataset:
     all_errors: List[pd.DataFrame] = []
@@ -126,8 +128,12 @@ def calculate_all_error_metrics(
         pbar.set_postfix_str(sid)
         try:
             errors = calculate_all_metrics(
-                sim=preds[sim_var].rename({basin_coord: "station_id", time_coord: "date"}).sel(station_id=sid),
-                obs=preds[obs_var].rename({basin_coord: "station_id", time_coord: "date"}).sel(station_id=sid)
+                sim=preds[sim_var]
+                .rename({basin_coord: "station_id", time_coord: "date"})
+                .sel(station_id=sid),
+                obs=preds[obs_var]
+                .rename({basin_coord: "station_id", time_coord: "date"})
+                .sel(station_id=sid),
             )
             all_errors.append(pd.DataFrame({sid: errors}).T)
         except AllNaNError:
@@ -269,7 +275,9 @@ def main(
         df.to_csv(test_dir / fname)
 
 
-def read_multi_experiment_results(ensemble_dir: Path, ensemble_members: bool = True) -> xr.Dataset:
+def read_multi_experiment_results(
+    ensemble_dir: Path, ensemble_members: bool = True
+) -> xr.Dataset:
     """
     Read all of the {expt_title}/test/model_epoch0{epoch}/*_results.p dictionaries
      into one xarray Dataset.
@@ -280,7 +288,9 @@ def read_multi_experiment_results(ensemble_dir: Path, ensemble_members: bool = T
     """
     paths = [d for d in (ensemble_dir).glob("**/*_results.p")]
     unique = np.unique([p.parent.name for p in paths])
-    assert len(unique) == 1, f"Expected one epoch of test model results. Got: {unique}\nFrom {pprint.pformat(paths)}"
+    assert (
+        len(unique) == 1
+    ), f"Expected one epoch of test model results. Got: {unique}\nFrom {pprint.pformat(paths)}"
     ps = [pickle.load(p.open("rb")) for p in paths]
 
     output_dict = {}
@@ -298,7 +308,7 @@ def read_multi_experiment_results(ensemble_dir: Path, ensemble_members: bool = T
                 print("found ensemble mean")
                 name = "mean"
         else:
-            # get the experiment title/name
+            #  get the experiment title/name
             name = paths[i].parent.parent.parent.name
             # expect to find a datetime stamp in the name
             m = re.search("_\d+_\d+", paths[i].__str__())
@@ -342,23 +352,29 @@ def read_multi_experiment_results(ensemble_dir: Path, ensemble_members: bool = T
 
 def calculate_member_errors(
     member_ds: xr.Dataset,
-    basin_coord: str = "basin", 
-    time_coord: str = "date", 
-    obs_var: str = "discharge_spec_obs", 
+    basin_coord: str = "basin",
+    time_coord: str = "date",
+    obs_var: str = "discharge_spec_obs",
     sim_var: str = "discharge_spec_sim",
 ) -> xr.Dataset:
     assert "member" in member_ds.coords
-    
+
     all_errors = []
     print(f"Calculating Errors for {len(member_ds['member'].values)} members")
     for member in member_ds["member"].values:
         preds = member_ds.sel(member=member)
-        err = calculate_all_error_metrics(preds, basin_coord=basin_coord, time_coord=time_coord, obs_var=obs_var, sim_var=sim_var,)
+        err = calculate_all_error_metrics(
+            preds,
+            basin_coord=basin_coord,
+            time_coord=time_coord,
+            obs_var=obs_var,
+            sim_var=sim_var,
+        )
         err = err.assign_coords(member=member).expand_dims("member")
         all_errors.append(err)
 
     all_errors = xr.merge(all_errors)
-    
+
     return all_errors
 
 
