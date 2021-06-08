@@ -121,7 +121,7 @@ def calculate_all_error_metrics(
     all_errors: List[pd.DataFrame] = []
     missing_data: List[str] = []
 
-    pbar = tqdm(preds[basin_coord].values, desc="Calculating Errors:")
+    pbar = tqdm(preds[basin_coord].values, desc="Calculating Errors")
     for sid in pbar:
         pbar.set_postfix_str(sid)
         try:
