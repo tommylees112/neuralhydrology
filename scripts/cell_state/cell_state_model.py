@@ -21,7 +21,7 @@ from neuralhydrology.utils.config import Config
 
 def create_model(dataset: CellStateDataset, device: str = "cpu", dropout: float = 0.0):
     # number of weights == number of dimensions in cell state vector (cfg.hidden_size)
-    D_in = dataset['dimensions']
+    D_in = dataset.dimensions
     drop = nn.Dropout(p=dropout)
     model = torch.nn.Sequential(torch.nn.Linear(drop(D_in), 1))
     model = model.to(device)
