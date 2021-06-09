@@ -19,10 +19,11 @@ from neuralhydrology.modelzoo.basemodel import BaseModel
 from neuralhydrology.utils.config import Config
 
 
-def create_model(dataset: CellStateDataset, device: str = "cpu"):
+def create_model(dataset: CellStateDataset, device: str = "cpu", dropout: float = 0.0):
     # number of weights == number of dimensions in cell state vector (cfg.hidden_size)
     D_in = dataset['dimensions']
-    model = torch.nn.Sequential(torch.nn.Linear(D_in, 1))
+    drop = nn.Dropout(p=dropout)
+    model = torch.nn.Sequential(torch.nn.Linear(drop(D_in), 1))
     model = model.to(device)
     return model
 
@@ -121,7 +122,7 @@ def train_model_loop(
     model = create_model(dataset)
 
     # 4. Run training loop (iterate over batches)
-    model, train_losses, val_losses = train_model(
+    model, train_losses, _ = train_model(
         model,
         train_dataset,
         learning_rate=1e-3,
@@ -174,7 +175,8 @@ if __name__ == "__main__":
     train_test = True
     train_val = False
 
-    target_features = [v for v in norm_sm.data_vars] else ["sm"]
+    data_vars = [v for v in norm_sm.data_vars]
+    target_features = data_vars if len(data_vars) > 1 else ["sm"]
     for feature in target_features:
         train_losses, model, test_loader = train_model_loop(
             config=cfg,

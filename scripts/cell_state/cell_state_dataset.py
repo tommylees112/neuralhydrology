@@ -4,7 +4,6 @@ import torch
 from torch.utils.data import Subset, Dataset, SubsetRandomSampler
 import xarray as xr 
 import pandas as pd
-import sys 
 
 
 class CellStateDataset(Dataset):
@@ -162,12 +161,12 @@ def train_validation_split(
 if __name__ == "__main__":
     # generate random but small target/input data
     # create dataset
+    cfg = None
     dataset = CellStateDataset(
-        input_data=,
-        target_data=,
+        input_data=None,
+        target_data=None,
         start_date=cfg.test_start_date,
         end_date=cfg.test_end_date,
-
     )
     
     # train-val, test split data (using the subset)
