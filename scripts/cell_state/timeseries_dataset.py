@@ -87,8 +87,8 @@ class TimeSeriesDataset(Dataset):
     ) -> None:
         lookup: List[Tuple[str, int]] = []
         spatial_units_without_samples: List[Union[str, int]] = []
-        x_d: Dict[str, np.ndarray] = {}
-        y: Dict[str, np.ndarray] = {}
+        self.x_d: Dict[str, np.ndarray] = {}
+        self.y: Dict[str, np.ndarray] = {}
 
         # spatial_unit = target_data[self.basin_dim].values[0]
         pbar = tqdm(target_data.station_id.values, desc=f"Creating Samples")
