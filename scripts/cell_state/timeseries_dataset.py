@@ -100,8 +100,8 @@ class TimeSeriesDataset(Dataset):
             out_df = target_data.sel({self.basin_dim: spatial_unit}).to_dataframe()
 
             #  create np.ndarray
-            _x_d = in_df[self.input_vars].values
-            _y = out_df[self.target_var].values
+            _x_d = in_df[self.input_variables].values
+            _y = out_df[self.target_variable].values
 
             #  keep pointer to the valid samples
             flag = validate(x_d=_x_d, y=_y, seq_length=self.seq_length, mode=self.mode)
@@ -124,7 +124,7 @@ class TimeSeriesDataset(Dataset):
     def __len__(self):
         return self.num_samples
 
-    def __getitem__(self, idx: int):
+    def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
         spatial_unit, target_ix = self.lookup_table[idx]
         # X, y samples
         X = self.x_d[spatial_unit][
@@ -135,3 +135,10 @@ class TimeSeriesDataset(Dataset):
         #  to torch.Tensor
         y = Tensor(X)
         X = Tensor(y)
+
+        data = dict(
+            x_d=X,
+            y=y
+        )
+
+        return data
