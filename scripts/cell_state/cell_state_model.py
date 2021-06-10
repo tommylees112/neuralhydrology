@@ -37,7 +37,7 @@ def train_model(
     train_dataset,
     learning_rate: float = 1e-2,
     n_epochs: int = 5,
-    weight_decay: float = 0,
+    l2_penalty: float = 0,
     val_split: bool = False,
     desc: str = "Training Epoch",
 ) -> Tuple[Any, List[float], List[float]]:
@@ -46,7 +46,7 @@ def train_model(
 
     # GET optimizer
     optimizer = torch.optim.Adam(
-        model.parameters(), lr=learning_rate, weight_decay=weight_decay
+        model.parameters(), lr=learning_rate, weight_decay=l2_penalty
     )
 
     #  TRAIN
@@ -108,6 +108,7 @@ def train_model_loop(
     desc: str = "Training Epoch",
     dropout: float = 0.0,
     device: str = "cpu",
+    l2_penalty: float = 0,
 ) -> Tuple[List[float], BaseModel, Optional[Tuple[DataLoader]]]:
     #  1. create dataset (input, target)
     dataset = CellStateDataset(
@@ -137,6 +138,7 @@ def train_model_loop(
         weight_decay=0,
         val_split=train_val,
         desc=desc,
+        l2_penalty=l2_penalty,
     )
 
     # 5. Save outputs (losses: List[float], model: BaseModel, dataloader: DataLoader)
