@@ -2,18 +2,26 @@ from typing import List, Tuple, Any, Dict, Union, Optional
 from tqdm import tqdm
 import numpy as np
 import xarray as xr
-import torch 
+import torch
 from torch import Tensor
 from torch import nn
 from torch.utils.data import DataLoader
 from collections import defaultdict
-import pandas as pd 
+import pandas as pd
 
 import sys
+
 sys.path.append("/home/tommy/neuralhydrology")
 from neuralhydrology.modelzoo.basemodel import BaseModel
-from scripts.cell_state.cell_state_dataset import CellStateDataset, get_train_test_dataset, train_validation_split
-from scripts.cell_state.analysis import (get_all_models_weights, calculate_raw_correlations)
+from scripts.cell_state.cell_state_dataset import (
+    CellStateDataset,
+    get_train_test_dataset,
+    train_validation_split,
+)
+from scripts.cell_state.analysis import (
+    get_all_models_weights,
+    calculate_raw_correlations,
+)
 from neuralhydrology.modelzoo.head import get_head
 from neuralhydrology.modelzoo.basemodel import BaseModel
 from neuralhydrology.utils.config import Config
@@ -23,10 +31,10 @@ class LinearModel(nn.Module):
     def __init__(self, D_in: int, dropout: float = 0.0):
         super(LinearModel, self).__init__()
 
-        # number of weights == number of dimensions in cell state vector (cfg.hidden_size)
+        #  number of weights == number of dimensions in cell state vector (cfg.hidden_size)
         self.D_in = D_in
         self.model = torch.nn.Sequential(torch.nn.Linear(self.D_in, 1))
-        self.dropout = nn.Dropout(p=dropout)   
+        self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, data):
         return self.model(self.dropout(data))
@@ -41,7 +49,7 @@ def train_model(
     val_split: bool = False,
     desc: str = "Training Epoch",
 ) -> Tuple[Any, List[float], List[float]]:
-    # GET loss function
+    #  GET loss function
     loss_fn = torch.nn.MSELoss(reduction="sum")
 
     # GET optimizer
@@ -55,7 +63,7 @@ def train_model(
     for epoch in tqdm(range(n_epochs), desc=desc):
         train_losses = []
         val_losses = []
-        
+
         #  new train-validation split each epoch
         if val_split:
             #  create a unique test, val set (random) for each ...
@@ -88,12 +96,12 @@ def train_model(
                     y_pred = model(X)
                     loss = loss_fn(y_pred, y)
                     val_losses.append(loss.detach().cpu().numpy())
-            
-            # save the epoch-mean losses
+
+            #  save the epoch-mean losses
             val_losses_ALL = np.mean(val_losses)
 
         train_losses_ALL.append(np.mean(train_losses))
-        
+
     return model, train_losses_ALL, val_losses_ALL
 
 
@@ -161,7 +169,7 @@ def calculate_predictions(model: BaseModel, loader: DataLoader) -> xr.Dataset:
             X, y = data
             y_hat = model(X)
 
-            # Coords / Dimensions
+            #  Coords / Dimensions
             predictions["time"].extend(pd.to_datetime(time))
             predictions["station_id"].extend(basin)
 
@@ -174,8 +182,8 @@ def calculate_predictions(model: BaseModel, loader: DataLoader) -> xr.Dataset:
 
 if __name__ == "__main__":
     # load in config
-    # load in input data
-    # load in target data (Soil Moisture)
+    #  load in input data
+    #  load in target data (Soil Moisture)
 
     losses_list = []
     models = []
@@ -190,7 +198,7 @@ if __name__ == "__main__":
         train_losses, model, test_loader = train_model_loop(
             config=cfg,
             input_data=input_data,
-            target_data=norm_sm[feature],  # needs to be xr.DataArray
+            target_data=norm_sm[feature],  #  needs to be xr.DataArray
             train_test=train_test,
             train_val=train_val,
             return_loaders=True,

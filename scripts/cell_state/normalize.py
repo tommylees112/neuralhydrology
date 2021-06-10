@@ -1,4 +1,4 @@
-import xarray as xr 
+import xarray as xr
 import numpy as np
 
 from sklearn.preprocessing import StandardScaler
@@ -9,7 +9,9 @@ def normalize_xr_by_basin(ds: xr.Dataset) -> xr.Dataset:
     return (ds - ds.mean(dim="time")) / ds.std(dim="time")
 
 
-def normalize_cell_states(cell_state: np.ndarray, desc: str = "Normalize") -> np.ndarray:
+def normalize_cell_states(
+    cell_state: np.ndarray, desc: str = "Normalize"
+) -> np.ndarray:
     """Normalize each cell state by DIMENSION"""
     original_shape = cell_state.shape
     store = []
@@ -38,10 +40,10 @@ def normalize_cell_states(cell_state: np.ndarray, desc: str = "Normalize") -> np
 
 
 def normalize_xarray_cstate(
-    c_state: xr.Dataset, 
-    cell_state_var: str = "cell_state", 
-    time_coord: str = "date", 
-    basin_coord: str = "station_id"
+    c_state: xr.Dataset,
+    cell_state_var: str = "cell_state",
+    time_coord: str = "date",
+    basin_coord: str = "station_id",
 ) -> xr.Dataset:
     #  Normalize all station values in cs_data:
     all_normed = []
@@ -50,14 +52,20 @@ def normalize_xarray_cstate(
             c_state.sel(station_id=station)[cell_state_var].values
         )
         all_normed.append(norm_state)
-    
-    # stack the normalized numpy arrays
+
+    #  stack the normalized numpy arrays
     all_normed_stack = np.stack(all_normed)
-    #  [time, station_id, dimension]
+    #   [time, station_id, dimension]
     #  work out how to do transpose [NOTE: assumes all sizes are different]
-    time_ix = np.where(np.array(all_normed_stack.shape) == len(c_state[time_coord]))[0][0]
-    basin_ix = np.where(np.array(all_normed_stack.shape) == len(c_state[basin_coord]))[0][0]
-    dimension_ix = np.where(np.array(all_normed_stack.shape) == len(c_state['dimension']))[0][0]
+    time_ix = np.where(np.array(all_normed_stack.shape) == len(c_state[time_coord]))[0][
+        0
+    ]
+    basin_ix = np.where(np.array(all_normed_stack.shape) == len(c_state[basin_coord]))[
+        0
+    ][0]
+    dimension_ix = np.where(
+        np.array(all_normed_stack.shape) == len(c_state["dimension"])
+    )[0][0]
     all_normed_stack = all_normed_stack.transpose(time_ix, basin_ix, dimension_ix)
 
     norm_c_state = xr.ones_like(c_state[cell_state_var])

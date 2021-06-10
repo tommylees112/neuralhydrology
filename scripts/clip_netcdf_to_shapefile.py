@@ -81,7 +81,9 @@ def create_timeseries_of_masked_datasets(
     return out_ds
 
 
-def create_camels_basin_timeseries(path_to_sm_data: Path, shp_data_dir: Path) -> xr.Dataset:
+def create_camels_basin_timeseries(
+    path_to_sm_data: Path, shp_data_dir: Path
+) -> xr.Dataset:
     # 1. Load in shapefile and dataset
     shp = shp_data_dir / "Catchment_Boundaries/CAMELS_GB_catchment_boundaries.shp"
     gdf = gpd.read_file(shp)
@@ -114,7 +116,9 @@ if __name__ == "__main__":
     shp_data_dir = data_dir / "CAMELS_GB_DATASET"
     path_to_sm_data = data_dir / "esa_cci_sm_gb.nc"
 
-    out_ds = create_camels_basin_timeseries(path_to_sm_data=path_to_sm_data, shp_data_dir=shp_data_dir)
+    out_ds = create_camels_basin_timeseries(
+        path_to_sm_data=path_to_sm_data, shp_data_dir=shp_data_dir
+    )
 
     # save the catchment averaged timeseries of soil moisture
     out_ds.to_netcdf(data_dir / "camels_basin_ESACCI_sm.nc")

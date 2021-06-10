@@ -4,10 +4,11 @@ import numpy as np
 import xarray as xr
 from torch import nn
 from torch.utils.data import DataLoader
-from tqdm import tqdm 
+from tqdm import tqdm
 import pandas as pd
 
 import sys
+
 sys.path.append("/home/tommy/neuralhydrology")
 from neuralhydrology.utils.config import Config
 from scripts.cell_state.cell_state_dataset import CellStateDataset
@@ -35,7 +36,11 @@ def get_all_models_weights(models: List[nn.Linear]) -> Tuple[np.ndarray]:
 
 
 def calculate_raw_correlations(
-    norm_sm: xr.Dataset, cs_data: xr.Dataset, variable_str: Optional[str] = "sm", device: str = "cpu", time_dim: str = "time",
+    norm_sm: xr.Dataset,
+    cs_data: xr.Dataset,
+    variable_str: Optional[str] = "sm",
+    device: str = "cpu",
+    time_dim: str = "time",
 ) -> np.ndarray:
     """Calculate the correlation coefficient for each feature of cs_data
     using: `np.corrcoef`.
@@ -52,8 +57,10 @@ def calculate_raw_correlations(
     #  Create the datasets for each feature
     datasets = []
 
-    # features can be soil level or just one soil moisture estimate
-    features = list(norm_sm.data_vars) if len(list(norm_sm.data_vars)) > 1 else [variable_str]
+    #  features can be soil level or just one soil moisture estimate
+    features = (
+        list(norm_sm.data_vars) if len(list(norm_sm.data_vars)) > 1 else [variable_str]
+    )
     for feature in features:
         # target data = SOIL MOISTURE
         target_data = norm_sm[feature]
@@ -66,7 +73,7 @@ def calculate_raw_correlations(
         start_date = pd.to_datetime(cs_data[time_dim].min().values)
         end_date = pd.to_datetime(cs_data[time_dim].max().values)
         sm_dataset = CellStateDataset(
-            input_data=input_data, 
+            input_data=input_data,
             target_data=target_data,
             device=device,
             start_date=start_date,
@@ -80,7 +87,7 @@ def calculate_raw_correlations(
     pbar = tqdm(np.arange(len(datasets)), desc="Calculating Correlation")
     for feature in pbar:
         pbar.set_postfix_str(feature)
-        
+
         #  get the DATA for that feature
         all_cs_data = np.array(
             [x.detach().cpu().numpy() for (_, (x, _)) in DataLoader(datasets[feature])]

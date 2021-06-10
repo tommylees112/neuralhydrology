@@ -1,8 +1,8 @@
 from typing import Tuple, Any, Optional, Union
-import numpy as np 
+import numpy as np
 import torch
 from torch.utils.data import Subset, Dataset, SubsetRandomSampler
-import xarray as xr 
+import xarray as xr
 import pandas as pd
 from tqdm import tqdm
 
@@ -13,19 +13,23 @@ def _fill_gaps_da(da: xr.DataArray, fill: Optional[str] = None) -> xr.DataArray:
     if fill is None:
         return da
     else:
-        # fill gaps 
+        # fill gaps
         if fill == "median":
             # fill median
             da = da.fillna(da.median())
         elif fill == "interpolate":
-            # fill interpolation
+            #  fill interpolation
             da_df = da.to_dataframe().interpolate()
             coords = [c for c in da_df.columns if c != variable]
-            da = da_df.to_xarray().assign_coords(dict(zip(coords, da_df[coords].iloc[0].values)))[variable]
+            da = da_df.to_xarray().assign_coords(
+                dict(zip(coords, da_df[coords].iloc[0].values))
+            )[variable]
     return da
 
 
-def fill_gaps(ds: Union[xr.DataArray, xr.Dataset], fill: Optional[str] = None) -> Union[xr.DataArray, xr.Dataset]:
+def fill_gaps(
+    ds: Union[xr.DataArray, xr.Dataset], fill: Optional[str] = None
+) -> Union[xr.DataArray, xr.Dataset]:
     if fill is None:
         return ds
     if isinstance(ds, xr.Dataset):
@@ -41,8 +45,8 @@ def fill_gaps(ds: Union[xr.DataArray, xr.Dataset], fill: Optional[str] = None) -
 class CellStateDataset(Dataset):
     def __init__(
         self,
-        input_data: xr.Dataset,         # cell state (`hs` dimensions)
-        target_data: xr.DataArray,      # soil moisture 
+        input_data: xr.Dataset,  #  cell state (`hs` dimensions)
+        target_data: xr.DataArray,  #  soil moisture
         start_date: pd.Timestamp,
         end_date: pd.Timestamp,
         device: str = "cpu",
@@ -52,18 +56,22 @@ class CellStateDataset(Dataset):
         assert all(np.isin(["time", "dimension", "station_id"], input_data.dims))
         assert "cell_state" in input_data
 
-        # drop missing / non matching basins
-        if not all(np.isin(input_data.station_id.values, target_data.station_id.values)):
-            input_data = input_data.sel(station_id=np.isin(input_data.station_id.values, target_data.station_id.values))
+        #  drop missing / non matching basins
+        if not all(
+            np.isin(input_data.station_id.values, target_data.station_id.values)
+        ):
+            input_data = input_data.sel(
+                station_id=np.isin(
+                    input_data.station_id.values, target_data.station_id.values
+                )
+            )
 
         self.input_data = input_data
         self.device = device
         self.variable_str = variable_str
 
         #  All times that we have data for
-        times = pd.date_range(
-            start_date, end_date, freq="D"
-        )
+        times = pd.date_range(start_date, end_date, freq="D")
         bool_input_times = np.isin(input_data.time.values, times)
         bool_target_times = np.isin(target_data.time.values, times)
         self.all_times = list(
@@ -103,7 +111,7 @@ class CellStateDataset(Dataset):
                 .sel(station_id=basin)
                 .values.astype("float64")
             )
-            
+
             Y = self.target_data.sel(station_id=basin).values.astype("float64")
 
             # Ensure time is the 1st (0 index) axis
@@ -166,7 +174,7 @@ def get_train_test_dataset(
     test_dataset = Subset(dataset, range(test_index, all_data_size))
     # train data is from start : test_index
     train_dataset = Subset(dataset, range(0, test_index))
-    # sense-check
+    #  sense-check
     assert len(train_dataset) + len(test_dataset) == all_data_size
 
     return train_dataset, test_dataset
@@ -195,8 +203,8 @@ def train_validation_split(
 
 
 if __name__ == "__main__":
-    # generate random but small target/input data
-    # create dataset
+    #  generate random but small target/input data
+    #  create dataset
     cfg = None
     dataset = CellStateDataset(
         input_data=None,
@@ -204,8 +212,8 @@ if __name__ == "__main__":
         start_date=cfg.test_start_date,
         end_date=cfg.test_end_date,
     )
-    
-    # train-val, test split data (using the subset)
+
+    #  train-val, test split data (using the subset)
     train_ds, test_ds = get_train_test_dataset(dataset, test_proportion=0.2)
     train_ds, validation = train_validation_split(train_ds, validation_split=0.1)
-    pass 
+    pass

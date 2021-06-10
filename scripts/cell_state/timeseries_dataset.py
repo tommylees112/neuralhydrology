@@ -1,6 +1,6 @@
 from typing import List, Tuple, Union, Dict
 import numpy as np
-import xarray as xr 
+import xarray as xr
 import pandas as pd
 from torch.utils.data import Dataset
 from torch import Tensor
@@ -13,9 +13,10 @@ from scripts.cell_state.cell_state_dataset import fill_gaps
 
 def get_matching_dim(ds1, ds2, dim: str) -> Tuple[np.ndarray]:
     return (
-        np.isin(ds1[dim].values, ds2[dim].values) 
-        , np.isin(ds2[dim].values, ds1[dim].values)
+        np.isin(ds1[dim].values, ds2[dim].values),
+        np.isin(ds2[dim].values, ds1[dim].values),
     )
+
 
 @njit
 def validate(x_d: List[np.ndarray], y: List[np.ndarray], seq_length: int):
@@ -25,20 +26,20 @@ def validate(x_d: List[np.ndarray], y: List[np.ndarray], seq_length: int):
     # if any condition met then go to next iteration of loop
     for target_index in prange(n_samples):
         start_input_idx = target_index - seq_length
-        
+
         # 1. not enough history (seq_length > history)
         if target_index < seq_length:
             flag[target_index] = 0
             continue
 
         #  2. NaN in the dynamic inputs
-        _x_d = x_d[start_input_idx: target_index + 1]
+        _x_d = x_d[start_input_idx : target_index + 1]
         if np.any(np.isnan(_x_d)):
             flag[target_index] = 0
             continue
 
         #  3. NaN in the outputs (TODO: only for training period)
-        _y = y[start_input_idx: target_index + 1]
+        _y = y[start_input_idx : target_index + 1]
         if np.any(np.isnan(_y)):
             flag[target_index] = 0
             continue
@@ -53,7 +54,7 @@ class TimeSeriesDataset(Dataset):
         target_data: xr.Dataset,
         target_variable: str,
         input_variables: List[str],
-        seq_length: int = 64, 
+        seq_length: int = 64,
         basin_dim: str = "station_id",
         time_dim: str = "time",
     ):
@@ -64,8 +65,12 @@ class TimeSeriesDataset(Dataset):
         self.time_dim = time_dim
 
         # matching data
-        target_time, input_time = get_matching_dim(target_data, input_data, self.time_dim)
-        target_sids, input_sids = get_matching_dim(target_data, input_data, self.basin_dim)
+        target_time, input_time = get_matching_dim(
+            target_data, input_data, self.time_dim
+        )
+        target_sids, input_sids = get_matching_dim(
+            target_data, input_data, self.basin_dim
+        )
 
         input_data = input_data.sel(time=input_time, station_id=input_sids)
         target_data = target_data.sel(time=target_time, station_id=target_sids)
@@ -74,11 +79,12 @@ class TimeSeriesDataset(Dataset):
         self.target_data = target_data
 
         self.create_lookup_table_of_valid_samples(
-            input_data=self.input_data,
-            target_data=self.target_data,
+            input_data=self.input_data, target_data=self.target_data,
         )
 
-    def create_lookup_table_of_valid_samples(self, input_data: Union[xr.Dataset, xr.DataArray], target_data: xr.DataArray) -> None:
+    def create_lookup_table_of_valid_samples(
+        self, input_data: Union[xr.Dataset, xr.DataArray], target_data: xr.DataArray
+    ) -> None:
         lookup: List[Tuple[str, int]] = []
         spatial_units_without_samples: List[Union[str, int]] = []
         x_d: Dict[str, np.ndarray] = {}
@@ -86,18 +92,18 @@ class TimeSeriesDataset(Dataset):
 
         # spatial_unit = target_data[self.basin_dim].values[0]
         pbar = tqdm(target_data.station_id.values, desc=f"Creating Samples")
-        
-        # iterate over each basin
+
+        #  iterate over each basin
         for spatial_unit in pbar:
-            # create pd.Dataframe timeseries from [xr.Dataset, xr.DataArray]
+            #  create pd.Dataframe timeseries from [xr.Dataset, xr.DataArray]
             in_df = input_data.sel({self.basin_dim: spatial_unit}).to_dataframe()
             out_df = target_data.sel({self.basin_dim: spatial_unit}).to_dataframe()
 
-            # create np.ndarray
+            #  create np.ndarray
             _x_d = in_df[self.input_vars].values
             _y = out_df[self.target_var].values
 
-            # keep pointer to the valid samples
+            #  keep pointer to the valid samples
             flag = validate(x_d=_x_d, y=_y, seq_length=self.seq_length, mode=self.mode)
             valid_samples = np.argwhere(flag == 1)
             [lookup.append((spatial_unit, smp)) for smp in valid_samples]
@@ -109,7 +115,7 @@ class TimeSeriesDataset(Dataset):
             else:
                 spatial_units_without_samples.append(spatial_unit)
 
-        # save lookup from INT: (spatial_unit, index) for valid samples
+        #  save lookup from INT: (spatial_unit, index) for valid samples
         self.lookup_table: Dict[int, Tuple[str, int]] = {
             i: elem for i, elem in enumerate(lookup)
         }
@@ -121,9 +127,11 @@ class TimeSeriesDataset(Dataset):
     def __getitem__(self, idx: int):
         spatial_unit, target_ix = self.lookup_table[idx]
         # X, y samples
-        X = self.x_d[spatial_unit][int(target_ix - self.seq_length): int(target_ix + 1)]
-        y = self.y[spatial_unit][int(target_ix - self.seq_length): int(target_ix + 1)]
+        X = self.x_d[spatial_unit][
+            int(target_ix - self.seq_length) : int(target_ix + 1)
+        ]
+        y = self.y[spatial_unit][int(target_ix - self.seq_length) : int(target_ix + 1)]
 
-        # to torch.Tensor
+        #  to torch.Tensor
         y = Tensor(X)
         X = Tensor(y)
