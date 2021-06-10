@@ -128,10 +128,9 @@ class TimeSeriesDataset(Dataset):
         spatial_unit, target_ix = self.lookup_table[idx]
         # X, y samples
         X = self.x_d[spatial_unit][
-            int(target_ix - self.seq_length) : int(target_ix + 1)
+            int(target_ix - self.seq_length) : int(target_ix)
         ]
-        y = self.y[spatial_unit][int(target_ix - self.seq_length) : int(target_ix + 1)]
-        assert False
+        y = self.y[spatial_unit][int(target_ix - self.seq_length) : int(target_ix)]
 
         #  to torch.Tensor
         y = Tensor(X)
@@ -166,4 +165,6 @@ if __name__ == "__main__":
     # initialize datalaoder 
     from torch.utils.data import DataLoader
     dl = DataLoader(td, batch_size=100)
-    data = dl.__iter__().__next__()
+    data = dl.__iter__().__next__() 
+    assert data["x_d"].shape == (64, 100, 1)
+    assert False
