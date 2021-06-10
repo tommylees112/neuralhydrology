@@ -4,6 +4,7 @@ import torch
 from torch.utils.data import Subset, Dataset, SubsetRandomSampler
 import xarray as xr 
 import pandas as pd
+from tqdm import tqdm
 
 
 def _fill_gaps_da(da: xr.DataArray, fill: Optional[str] = None) -> xr.DataArray:
@@ -25,8 +26,12 @@ def _fill_gaps_da(da: xr.DataArray, fill: Optional[str] = None) -> xr.DataArray:
 
 
 def fill_gaps(ds: Union[xr.DataArray, xr.Dataset], fill: Optional[str] = None) -> Union[xr.DataArray, xr.Dataset]:
+    if fill is None:
+        return ds
     if isinstance(ds, xr.Dataset):
-        for v in ds.data_vars:
+        pbar = tqdm(ds.data_vars, desc=f"Filling gaps with method {fill}")
+        for v in pbar:
+            pbar.set_postfix_str(v)
             ds[v] = _fill_gaps_da(ds[v], fill=fill)
     else:
         ds = _fill_gaps_da(ds, fill=fill)
