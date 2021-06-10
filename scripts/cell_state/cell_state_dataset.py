@@ -1,9 +1,27 @@
-from typing import Tuple, Any
+from typing import Tuple, Any, Optional
 import numpy as np 
 import torch
 from torch.utils.data import Subset, Dataset, SubsetRandomSampler
 import xarray as xr 
 import pandas as pd
+
+
+def fill_gaps_da(da: xr.DataArray, fill: Optional[str] = None) -> xr.DataArray:
+    assert isinstance(da, xr.Dataarray), "Expect da to be DataArray (not dataset)"
+    variable = da.name
+    if fill is None:
+        return da
+    else:
+        # fill gaps 
+        if fill == "median":
+            # fill median
+            da = da.fillna(da.median())
+        elif fill == "interpolate":
+            # fill interpolation
+            da_df = da.to_dataframe().interpolate()
+            coords = [c for c in da_df.columns if c != variable]
+            da = da_df.to_xarray().assign_coords(dict(zip(coords, da_df[coords].iloc[0].values)))
+    return da
 
 
 class CellStateDataset(Dataset):
@@ -15,6 +33,7 @@ class CellStateDataset(Dataset):
         end_date: pd.Timestamp,
         device: str = "cpu",
         variable_str: str = "cell_state",
+        fill: Optional[str] = None,
     ):
         assert all(np.isin(["time", "dimension", "station_id"], input_data.dims))
         assert "cell_state" in input_data
@@ -42,7 +61,8 @@ class CellStateDataset(Dataset):
 
         # get input/target data
         self.input_data = self.input_data.sel(time=self.all_times)
-        self.target_data = target_data.sel(time=self.all_times)
+        target_data = target_data.sel(time=self.all_times)
+        self.target_data = fill_gaps_da(self.target_data, fill=fill)
 
         # basins
         self.basins = input_data.station_id.values
@@ -68,6 +88,7 @@ class CellStateDataset(Dataset):
                 .sel(station_id=basin)
                 .values.astype("float64")
             )
+            
             Y = self.target_data.sel(station_id=basin).values.astype("float64")
 
             # Ensure time is the 1st (0 index) axis
