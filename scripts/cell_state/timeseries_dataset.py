@@ -57,12 +57,14 @@ class TimeSeriesDataset(Dataset):
         seq_length: int = 64,
         basin_dim: str = "station_id",
         time_dim: str = "time",
+        device: str = "cpu",
     ):
         self.target_variable = target_variable
         self.input_variables = input_variables
         self.seq_length = seq_length
         self.basin_dim = basin_dim
         self.time_dim = time_dim
+        self.device = device
 
         # matching data
         target_time, input_time = get_matching_dim(
@@ -133,8 +135,8 @@ class TimeSeriesDataset(Dataset):
         y = self.y[spatial_unit][int(target_ix - self.seq_length) : int(target_ix)]
 
         #  to torch.Tensor
-        y = Tensor(X)
-        X = Tensor(y)
+        y = Tensor(X).to(self.device)
+        X = Tensor(y).to(self.device)
 
         data = dict(
             x_d=X,
@@ -166,5 +168,5 @@ if __name__ == "__main__":
     from torch.utils.data import DataLoader
     dl = DataLoader(td, batch_size=100)
     data = dl.__iter__().__next__() 
-    assert data["x_d"].shape == (64, 100, 1)
+    assert data["x_d"].shape == (100, 64, 1)
     assert False
