@@ -37,7 +37,7 @@ class LinearModel(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, data: Dict[str, torch.Tensor]):
-        return self.model(self.dropout(data["x_d"].flatten()))
+        return self.model(self.dropout(data["x_d"].squeeze()))
 
 
 def train_model(
