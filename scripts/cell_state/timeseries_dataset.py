@@ -18,7 +18,7 @@ def get_matching_dim(ds1, ds2, dim: str) -> Tuple[np.ndarray]:
     )
 
 
-# @njit
+@njit
 def validate(x_d: List[np.ndarray], y: List[np.ndarray], seq_length: int):
     n_samples = len(y)
     flag = np.ones(n_samples)
@@ -26,8 +26,6 @@ def validate(x_d: List[np.ndarray], y: List[np.ndarray], seq_length: int):
     # if any condition met then go to next iteration of loop
     for target_index in prange(n_samples):
         start_input_idx = target_index - seq_length
-        if target_index == 64:
-            assert False
 
         # 1. not enough history (seq_length > history)
         if start_input_idx < 0:
@@ -35,13 +33,13 @@ def validate(x_d: List[np.ndarray], y: List[np.ndarray], seq_length: int):
             continue
 
         #  2. NaN in the dynamic inputs
-        _x_d = x_d[start_input_idx : target_index + 1]
+        _x_d = x_d[start_input_idx : target_index]
         if np.any(np.isnan(_x_d)):
             flag[target_index] = 0
             continue
 
         #  3. NaN in the outputs (TODO: only for training period)
-        _y = y[start_input_idx : target_index + 1]
+        _y = y[start_input_idx : target_index]
         if np.any(np.isnan(_y)):
             flag[target_index] = 0
             continue
@@ -118,7 +116,6 @@ class TimeSeriesDataset(Dataset):
                 spatial_units_without_samples.append(spatial_unit)
 
         #  save lookup from INT: (spatial_unit, index) for valid samples
-        assert False
         self.lookup_table: Dict[int, Tuple[str, int]] = {
             i: elem for i, elem in enumerate(lookup)
         }
