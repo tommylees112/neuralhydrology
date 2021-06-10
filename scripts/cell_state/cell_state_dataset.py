@@ -7,7 +7,7 @@ import pandas as pd
 
 
 def fill_gaps_da(da: xr.DataArray, fill: Optional[str] = None) -> xr.DataArray:
-    assert isinstance(da, xr.Dataarray), "Expect da to be DataArray (not dataset)"
+    assert isinstance(da, xr.DataArray), "Expect da to be DataArray (not dataset)"
     variable = da.name
     if fill is None:
         return da
