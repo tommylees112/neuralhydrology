@@ -19,13 +19,15 @@ from neuralhydrology.modelzoo.basemodel import BaseModel
 from neuralhydrology.utils.config import Config
 
 
-def create_model(dataset: CellStateDataset, device: str = "cpu", dropout: float = 0.0):
-    # number of weights == number of dimensions in cell state vector (cfg.hidden_size)
-    D_in = dataset.dimensions
-    drop = nn.Dropout(p=dropout)
-    model = torch.nn.Sequential(torch.nn.Linear(drop(D_in), 1))
-    model = model.to(device)
-    return model
+class LinearModel(nn.Module):
+    def __init__(self, dataset: CellStateDataset, dropout: float = 0.0):
+        # number of weights == number of dimensions in cell state vector (cfg.hidden_size)
+        self.D_in = dataset.dimensions
+        self.model = torch.nn.Sequential(torch.nn.Linear(self.D_in, 1))
+        self.dropout = nn.Dropout(p=dropout)   
+
+    def forward(self, data):
+        return self.model(self.dropout(data))
 
 
 def train_model(
@@ -102,10 +104,12 @@ def train_model_loop(
     train_val: bool = False,
     return_loaders: bool = True,
     desc: str = "Training Epoch",
+    dropout: float = 0.0,
+    device: str = "cpu",
 ) -> Tuple[List[float], BaseModel, Optional[Tuple[DataLoader]]]:
     #  1. create dataset (input, target)
     dataset = CellStateDataset(
-        input_data=input_data, target_data=target_data, config=config,
+        input_data=input_data, target_data=target_data, config=config, device=device,
     )
 
     #  2. create train-test split
@@ -119,7 +123,8 @@ def train_model_loop(
         test_loader = DataLoader(dataset, batch_size=256, shuffle=False)
 
     #  3. initialise the model
-    model = create_model(dataset)
+    model = LinearModel(dataset, dropout=dropout)
+    model = model.to(device)
 
     # 4. Run training loop (iterate over batches)
     model, train_losses, _ = train_model(
