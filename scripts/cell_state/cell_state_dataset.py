@@ -1,4 +1,4 @@
-from typing import Tuple, Any, Optional
+from typing import Tuple, Any, Optional, Union
 import numpy as np 
 import torch
 from torch.utils.data import Subset, Dataset, SubsetRandomSampler
@@ -6,7 +6,7 @@ import xarray as xr
 import pandas as pd
 
 
-def fill_gaps_da(da: xr.DataArray, fill: Optional[str] = None) -> xr.DataArray:
+def _fill_gaps_da(da: xr.DataArray, fill: Optional[str] = None) -> xr.DataArray:
     assert isinstance(da, xr.DataArray), "Expect da to be DataArray (not dataset)"
     variable = da.name
     if fill is None:
@@ -22,6 +22,15 @@ def fill_gaps_da(da: xr.DataArray, fill: Optional[str] = None) -> xr.DataArray:
             coords = [c for c in da_df.columns if c != variable]
             da = da_df.to_xarray().assign_coords(dict(zip(coords, da_df[coords].iloc[0].values)))[variable]
     return da
+
+
+def fill_gaps(ds: Union[xr.DataArray, xr.Dataset], fill: Optional[str] = None) -> Union[xr.DataArray, xr.Dataset]:
+    if isinstance(ds, xr.Dataset):
+        for v in ds.data_vars:
+            ds[v] = _fill_gaps_da(ds[v], fill=fill)
+    else:
+        ds = _fill_gaps_da(ds, fill=fill)
+    return ds
 
 
 class CellStateDataset(Dataset):
