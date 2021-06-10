@@ -18,7 +18,7 @@ def get_matching_dim(ds1, ds2, dim: str) -> Tuple[np.ndarray]:
     )
 
 
-@njit
+# @njit
 def validate(x_d: List[np.ndarray], y: List[np.ndarray], seq_length: int):
     n_samples = len(y)
     flag = np.ones(n_samples)
@@ -26,9 +26,11 @@ def validate(x_d: List[np.ndarray], y: List[np.ndarray], seq_length: int):
     # if any condition met then go to next iteration of loop
     for target_index in prange(n_samples):
         start_input_idx = target_index - seq_length
+        if target_index == 64:
+            assert False
 
         # 1. not enough history (seq_length > history)
-        if target_index < seq_length:
+        if start_input_idx < 0:
             flag[target_index] = 0
             continue
 
