@@ -21,6 +21,8 @@ from neuralhydrology.utils.config import Config
 
 class LinearModel(nn.Module):
     def __init__(self, dataset: CellStateDataset, dropout: float = 0.0):
+        super(LinearModel, self).__init__()
+
         # number of weights == number of dimensions in cell state vector (cfg.hidden_size)
         self.D_in = dataset.dimensions
         self.model = torch.nn.Sequential(torch.nn.Linear(self.D_in, 1))
