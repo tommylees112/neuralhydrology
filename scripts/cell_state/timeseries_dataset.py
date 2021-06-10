@@ -57,14 +57,12 @@ class TimeSeriesDataset(Dataset):
         seq_length: int = 64,
         basin_dim: str = "station_id",
         time_dim: str = "time",
-        device: str = "cpu",
     ):
         self.target_variable = target_variable
         self.input_variables = input_variables
         self.seq_length = seq_length
         self.basin_dim = basin_dim
         self.time_dim = time_dim
-        self.device = device
 
         # matching data
         target_time, input_time = get_matching_dim(
