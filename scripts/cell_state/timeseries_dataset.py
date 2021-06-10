@@ -104,7 +104,7 @@ class TimeSeriesDataset(Dataset):
             _y = out_df[self.target_variable].values
 
             #  keep pointer to the valid samples
-            flag = validate(x_d=_x_d, y=_y, seq_length=self.seq_length, mode=self.mode)
+            flag = validate(x_d=_x_d, y=_y, seq_length=self.seq_length)
             valid_samples = np.argwhere(flag == 1)
             [lookup.append((spatial_unit, smp)) for smp in valid_samples]
 
