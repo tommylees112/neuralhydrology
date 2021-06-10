@@ -116,6 +116,7 @@ class TimeSeriesDataset(Dataset):
                 spatial_units_without_samples.append(spatial_unit)
 
         #  save lookup from INT: (spatial_unit, index) for valid samples
+        assert False
         self.lookup_table: Dict[int, Tuple[str, int]] = {
             i: elem for i, elem in enumerate(lookup)
         }
@@ -131,6 +132,7 @@ class TimeSeriesDataset(Dataset):
             int(target_ix - self.seq_length) : int(target_ix + 1)
         ]
         y = self.y[spatial_unit][int(target_ix - self.seq_length) : int(target_ix + 1)]
+        assert False
 
         #  to torch.Tensor
         y = Tensor(X)
