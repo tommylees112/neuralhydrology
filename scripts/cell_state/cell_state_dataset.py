@@ -156,7 +156,6 @@ class CellStateDataset(Dataset):
         data = {"X": x, "y": y, "meta": {"basin": basin, "time": time}}
 
         return data
-        # return data
 
 
 # train-test split

@@ -142,3 +142,27 @@ class TimeSeriesDataset(Dataset):
         )
 
         return data
+
+
+if __name__ == "__main__":
+    # load data
+    from pathlib import Path
+    data_dir = Path("/datadrive/data")
+    target_data = xr.open_dataset(data_dir / "SOIL_MOISTURE/interpolated_esa_cci_sm.nc")
+    input_data = xr.open_dataset(data_dir / "SOIL_MOISTURE/interpolated_normalised_camels_gb.nc")
+
+    # initialize dataset 
+    td = TimeSeriesDataset(
+        input_data=input_data,
+        target_data=target_data,
+        target_variable="sm",
+        input_variables=["precipitation"],
+        seq_length=64,
+        basin_dim="station_id",
+        time_dim="time"
+    )
+
+    # initialize datalaoder 
+    from torch.utils.data import DataLoader
+    dl = DataLoader(td, batch_size=100)
+    data = dl.__iter__().__next__()
