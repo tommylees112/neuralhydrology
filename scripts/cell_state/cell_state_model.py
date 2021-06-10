@@ -20,11 +20,11 @@ from neuralhydrology.utils.config import Config
 
 
 class LinearModel(nn.Module):
-    def __init__(self, dataset: CellStateDataset, dropout: float = 0.0):
+    def __init__(self, D_in: int, dropout: float = 0.0):
         super(LinearModel, self).__init__()
 
         # number of weights == number of dimensions in cell state vector (cfg.hidden_size)
-        self.D_in = dataset.dimensions
+        self.D_in = D_in
         self.model = torch.nn.Sequential(torch.nn.Linear(self.D_in, 1))
         self.dropout = nn.Dropout(p=dropout)   
 
@@ -126,7 +126,7 @@ def train_model_loop(
         test_loader = DataLoader(dataset, batch_size=256, shuffle=False)
 
     #  3. initialise the model
-    model = LinearModel(dataset, dropout=dropout)
+    model = LinearModel(D_in=dataset.dimensions, dropout=dropout)
     model = model.to(device)
 
     # 4. Run training loop (iterate over batches)
