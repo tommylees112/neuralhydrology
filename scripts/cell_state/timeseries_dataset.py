@@ -135,8 +135,8 @@ class TimeSeriesDataset(Dataset):
         y = self.y[spatial_unit][int(target_ix - self.seq_length) : int(target_ix)]
 
         #  to torch.Tensor
-        y = Tensor(X).to(self.device)
-        X = Tensor(y).to(self.device)
+        y = Tensor(X)
+        X = Tensor(y)
 
         data = dict(
             x_d=X,
