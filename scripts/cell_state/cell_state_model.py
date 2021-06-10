@@ -28,8 +28,8 @@ from neuralhydrology.utils.config import Config
 
 
 class LinearModel(nn.Module):
-    def __init__(self, D_in: int, dropout: float = 0.0):
-        super(LinearModel, self).__init__()
+    def __init__(self, D_in: int, dropout: float = 0.0, **kwargs):
+        super(LinearModel, self).__init__(**kwargs)
 
         #  number of weights == number of dimensions in cell state vector (cfg.hidden_size)
         self.D_in = D_in
