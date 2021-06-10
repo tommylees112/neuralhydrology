@@ -20,7 +20,7 @@ def fill_gaps_da(da: xr.DataArray, fill: Optional[str] = None) -> xr.DataArray:
             # fill interpolation
             da_df = da.to_dataframe().interpolate()
             coords = [c for c in da_df.columns if c != variable]
-            da = da_df.to_xarray().assign_coords(dict(zip(coords, da_df[coords].iloc[0].values)))
+            da = da_df.to_xarray().assign_coords(dict(zip(coords, da_df[coords].iloc[0].values)))[variable]
     return da
 
 
