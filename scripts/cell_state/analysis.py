@@ -5,6 +5,7 @@ import xarray as xr
 from torch import nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm 
+import pandas as pd
 
 import sys
 sys.path.append("/home/tommy/neuralhydrology")
@@ -34,7 +35,7 @@ def get_all_models_weights(models: List[nn.Linear]) -> Tuple[np.ndarray]:
 
 
 def calculate_raw_correlations(
-    norm_sm: xr.Dataset, cs_data: xr.Dataset, variable_str: Optional[str] = "sm", device: str = "cpu",
+    norm_sm: xr.Dataset, cs_data: xr.Dataset, variable_str: Optional[str] = "sm", device: str = "cpu", time_dim: str = "time",
 ) -> np.ndarray:
     """Calculate the correlation coefficient for each feature of cs_data
     using: `np.corrcoef`.
@@ -62,10 +63,14 @@ def calculate_raw_correlations(
         input_data = cs_data
         input_data["station_id"] = [int(sid) for sid in input_data["station_id"]]
 
+        start_date = pd.to_datetime(cs_data[time_dim].min().values)
+        end_date = pd.to_datetime(cs_data[time_dim].max().values)
         sm_dataset = CellStateDataset(
             input_data=input_data, 
             target_data=target_data,
             device=device,
+            start_date=start_date,
+            end_date=end_date,
         )
         datasets.append(sm_dataset)
 
