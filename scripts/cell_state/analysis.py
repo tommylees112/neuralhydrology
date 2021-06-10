@@ -34,7 +34,7 @@ def get_all_models_weights(models: List[nn.Linear]) -> Tuple[np.ndarray]:
 
 
 def calculate_raw_correlations(
-    norm_sm: xr.Dataset, cs_data: xr.Dataset, config: Config, variable_str: Optional[str] = "cell_state"
+    norm_sm: xr.Dataset, cs_data: xr.Dataset, variable_str: Optional[str] = "sm", device: str = "cpu",
 ) -> np.ndarray:
     """Calculate the correlation coefficient for each feature of cs_data
     using: `np.corrcoef`.
@@ -63,7 +63,9 @@ def calculate_raw_correlations(
         input_data["station_id"] = [int(sid) for sid in input_data["station_id"]]
 
         sm_dataset = CellStateDataset(
-            input_data=input_data, target_data=target_data, config=config,
+            input_data=input_data, 
+            target_data=target_data,
+            device=device,
         )
         datasets.append(sm_dataset)
 
