@@ -75,8 +75,9 @@ class CellStateDataset(Dataset):
 
         # get input/target data
         self.input_data = self.input_data.sel(time=self.all_times)
+        self.input_data = fill_gaps(self.input_data, fill=fill)
         target_data = target_data.sel(time=self.all_times)
-        self.target_data = fill_gaps_da(target_data, fill=fill)
+        self.target_data = fill_gaps(target_data, fill=fill)
 
         # basins
         self.basins = input_data.station_id.values
