@@ -36,13 +36,13 @@ class LinearModel(nn.Module):
         self.model = torch.nn.Sequential(torch.nn.Linear(self.D_in, 1))
         self.dropout = nn.Dropout(p=dropout)
 
-    def forward(self, data):
-        return self.model(self.dropout(data))
+    def forward(self, data: Dict[str, torch.Tensor]):
+        return self.model(self.dropout(data["x_d"]))
 
 
 def train_model(
-    model,
-    train_dataset,
+    model: nn.Module,
+    train_dataset: CellStateDataset,
     learning_rate: float = 1e-2,
     n_epochs: int = 5,
     l2_penalty: float = 0,
@@ -75,8 +75,7 @@ def train_model(
         else:
             train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True)
 
-        for (basin, time), data in train_loader:
-            X, y = data
+        for data in train_loader:
             y_pred = model(X)
             loss = loss_fn(y_pred, y)
 
@@ -165,9 +164,10 @@ def calculate_predictions(model: BaseModel, loader: DataLoader) -> xr.Dataset:
 
     model.eval()
     with torch.no_grad():
-        for (basin, time), data in loader:
-            X, y = data
-            y_hat = model(X)
+        for data in loader:
+            X, y = data["x_d"], data["y"]
+            basin, time = data["meta"]["basin"], data["meta"]["time"]
+            y_hat = model(data)
 
             #  Coords / Dimensions
             predictions["time"].extend(pd.to_datetime(time))
