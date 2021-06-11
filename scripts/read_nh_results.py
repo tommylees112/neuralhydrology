@@ -117,6 +117,12 @@ def get_all_station_ds(res_fp: Path) -> xr.Dataset:
     return ds
 
 
+def _check_metrics(metrics: Optional[List[str]]) -> None:
+    if metrics is not None:
+        all_metrics = ["NSE", "MSE", "RMSE", "KGE", "Alpha-NSE", "Beta-NSE", "Pearson-r", "FHV", "FMS", "FLV", "Peak-Timing",]
+        assert all([m in all_metrics for m in metrics]), f"Metrics must be one of {all_metrics}. You provided: {metrics}"
+
+
 def calculate_all_error_metrics(
     preds: xr.Dataset,
     basin_coord: str = "basin",
@@ -127,6 +133,8 @@ def calculate_all_error_metrics(
 ) -> xr.Dataset:
     all_errors: List[pd.DataFrame] = []
     missing_data: List[str] = []
+
+    _check_metrics(metrics)
 
     pbar = tqdm(preds[basin_coord].values, desc="Calculating Errors")
     for sid in pbar:
