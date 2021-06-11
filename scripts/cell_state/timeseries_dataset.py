@@ -117,8 +117,7 @@ class TimeSeriesDataset(Dataset):
                 spatial_units_without_samples.append(spatial_unit)
 
             if self.times == []:
-                assert False
-                self.times = in_df.index
+                self.times = np.array(in_df.index.to_list())
 
         #  save lookup from INT: (spatial_unit, index) for valid samples
         self.lookup_table: Dict[int, Tuple[str, int]] = {
@@ -142,6 +141,7 @@ class TimeSeriesDataset(Dataset):
         X = Tensor(y)
 
         # metadata
+        time = self.times[int(target_ix - self.seq_length) : int(target_ix)]
         meta = dict(
             spatial_unit=spatial_unit,
             time=time,
