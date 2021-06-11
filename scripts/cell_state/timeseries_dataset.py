@@ -120,7 +120,7 @@ class TimeSeriesDataset(Dataset):
                 #  store times as float32 to keep pytorch happy
                 # assert False
                 self.times = (
-                    in_df.index.values.astype(float)
+                    in_df.index.values.astype(np.float32)
                     # .astype(np.float32)
                 )
 
@@ -180,5 +180,5 @@ if __name__ == "__main__":
     data = dl.__iter__().__next__()
     assert data["x_d"].shape == (100, 64, 1)
 
-    times = data["meta"]["time"].numpy()
+    times = data["meta"]["time"].numpy().astype("datetime64[ns]")
     assert False
