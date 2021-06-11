@@ -69,7 +69,7 @@ def train(
     return losses
 
 
-def evaluate(model: LinearModel, dataloader: DataLoader,) -> xr.Dataset:
+def predict(model: LinearModel, dataloader: DataLoader,) -> xr.Dataset:
     predictions = defaultdict(list)
     model.eval()
     with torch.no_grad():
@@ -97,6 +97,7 @@ def evaluate(model: LinearModel, dataloader: DataLoader,) -> xr.Dataset:
 
 
 if __name__ == "__main__":
+    from scripts.read_nh_results import calculate_all_error_metrics
     data_dir = Path("/datadrive/data")
     device = "cuda:0"
 
@@ -129,7 +130,30 @@ if __name__ == "__main__":
     model = LinearModel(D_in=D_in)
     model.to(device)
 
-    #
+    # TRAIN the model
     learning_rate = 1e-2
     l2_penalty = 1
     n_epochs = 3
+
+    losses = train(
+        model=model, 
+        dataloader=train_dl, 
+        learning_rate=learning_rate, 
+        l2_penalty=l2_penalty,
+        device=device, 
+    )
+
+    # PREDICT
+    preds = predict(model=model, dataloader=test_dl)
+
+    # EVALUATE with error metrics 
+    errors = calculate_all_error_metrics(
+        preds, 
+        basin_coord="station_id",
+        time_coord="time",
+        obs_var="y",
+        sim_var="y_hat",
+        metrics=["NSE", "Pearson-r"]
+    )
+
+    assert False
