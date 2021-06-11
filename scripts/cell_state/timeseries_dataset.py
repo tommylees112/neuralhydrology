@@ -117,11 +117,10 @@ class TimeSeriesDataset(Dataset):
                 spatial_units_without_samples.append(spatial_unit)
 
             if self.times == []:
-                #  store times as FLOAT64 objects (convert later)
+                #  store times as np.datetime64
                 self.times = (
                     np.array(in_df.index.to_list())
                     .astype(np.datetime64)
-                    .astype(np.float32)
                 )
 
         #  save lookup from INT: (spatial_unit, index) for valid samples
@@ -180,5 +179,5 @@ if __name__ == "__main__":
     data = dl.__iter__().__next__()
     assert data["x_d"].shape == (100, 64, 1)
 
-    times = data["meta"]["time"].astype(np.datetime64)
+    times = data["meta"]["time"].numpy()
     assert False
