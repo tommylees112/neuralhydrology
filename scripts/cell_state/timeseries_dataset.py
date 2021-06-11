@@ -89,7 +89,7 @@ class TimeSeriesDataset(Dataset):
         spatial_units_without_samples: List[Union[str, int]] = []
         self.x_d: Dict[str, np.ndarray] = {}
         self.y: Dict[str, np.ndarray] = {}
-        self.times: List[pd.Timestamp] = []
+        self.times: List[float] = []
 
         # spatial_unit = target_data[self.basin_dim].values[0]
         pbar = tqdm(target_data.station_id.values, desc=f"Creating Samples")
@@ -117,7 +117,8 @@ class TimeSeriesDataset(Dataset):
                 spatial_units_without_samples.append(spatial_unit)
 
             if self.times == []:
-                self.times = np.array(in_df.index.to_list())
+                # store times as FLOAT64 objects (convert later)
+                self.times = np.array(in_df.index.to_list()).astype(np.datetime64).astype(np.float64)
 
         #  save lookup from INT: (spatial_unit, index) for valid samples
         self.lookup_table: Dict[int, Tuple[str, int]] = {
