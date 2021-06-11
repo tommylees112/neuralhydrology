@@ -119,7 +119,7 @@ def train_model_loop(
 ) -> Tuple[List[float], BaseModel, Optional[Tuple[DataLoader]]]:
     #  1. create dataset (input, target)
     dataset = CellStateDataset(
-        input_data=input_data, target_data=target_data, config=config, device=device,
+        input_data=input_data, target_data=target_data, device=device,
     )
 
     #  2. create train-test split

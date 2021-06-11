@@ -19,3 +19,4 @@ runs/
 # data/*
 docs/build/*
 .DS_Store
+.mypy_cache
