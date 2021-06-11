@@ -120,7 +120,7 @@ class TimeSeriesDataset(Dataset):
                 #  store times as float32 to keep pytorch happy
                 # assert False
                 self.times = (
-                    in_df.index.values.astype(str)
+                    in_df.index.values.astype(float)
                     # .astype(np.float32)
                 )
 
