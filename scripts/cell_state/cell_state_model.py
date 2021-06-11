@@ -79,7 +79,7 @@ def train_model(
             y_pred = model(X)
             loss = loss_fn(y_pred, y)
 
-            # train/update the weights
+            # train/update the weight
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -181,9 +181,19 @@ def calculate_predictions(model: BaseModel, loader: DataLoader) -> xr.Dataset:
 
 
 if __name__ == "__main__":
+    from pathlib import Path
+
+    data_dir = Path("/datadrive/data")
+    run_dir = data_dir / "runs/complexity_AZURE/hs_064_0306_205514"
+
     # load in config
+    cfg = Config(run_dir / "config.yml")
+    cfg.run_dir = run_dir
+
     #  load in input data
+    input_data = xr.open_dataset(data_dir / "SOIL_MOISTURE/norm_cs_data.nc")
     #  load in target data (Soil Moisture)
+    target_data = xr.open_dataset(data_dir / "SOIL_MOISTURE/interpolated_esa_cci_sm.nc")
 
     losses_list = []
     models = []
@@ -192,13 +202,13 @@ if __name__ == "__main__":
     train_test = True
     train_val = False
 
-    data_vars = [v for v in norm_sm.data_vars]
+    data_vars = [v for v in target_data.data_vars]
     target_features = data_vars if len(data_vars) > 1 else ["sm"]
     for feature in target_features:
         train_losses, model, test_loader = train_model_loop(
             config=cfg,
             input_data=input_data,
-            target_data=norm_sm[feature],  #  needs to be xr.DataArray
+            target_data=target_data[feature],  #  needs to be xr.DataArray
             train_test=train_test,
             train_val=train_val,
             return_loaders=True,
@@ -218,4 +228,4 @@ if __name__ == "__main__":
 
     #  calculate raw correlations (cell state and values)
     print("-- Running RAW Correlations --")
-    all_corrs = calculate_raw_correlations(norm_sm, input_data, config=cfg)
+    all_corrs = calculate_raw_correlations(target_data, input_data, config=cfg)
