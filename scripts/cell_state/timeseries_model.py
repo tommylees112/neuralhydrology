@@ -15,6 +15,7 @@ from scripts.cell_state.cell_state_model import to_xarray
 
 def _train_epoch(
     dataloader: DataLoader,
+    model: LinearModel,
     loss_fn: torch.nn.MSELoss,
     optimizer: torch.optim.Adam,
     epoch: Optional[int] = None,
