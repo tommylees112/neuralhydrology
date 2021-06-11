@@ -125,7 +125,7 @@ if __name__ == "__main__":
     )
     data = train_dl.__iter__().__next__()
     x, y = data["x_d"], data["y"]
-    assert not all(x == y), "Data Leakage"
+    assert not (x == y).all(), "Data Leakage"
 
     # GET the model
     #  np.product(data["x_d"].shape[1:]) if data["x_d"].shape[0] == batch_size else np.product(data["x_d"].shape[1:])
