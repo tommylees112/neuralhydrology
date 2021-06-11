@@ -117,10 +117,12 @@ class TimeSeriesDataset(Dataset):
                 spatial_units_without_samples.append(spatial_unit)
 
             if self.times == []:
-                #  store times as np.datetime64
+                #  store times as float32 to keep pytorch happy
+                assert False
                 self.times = (
                     np.array(in_df.index.to_list())
                     .astype(np.datetime64)
+                    .astype(np.float32)
                 )
 
         #  save lookup from INT: (spatial_unit, index) for valid samples
