@@ -8,7 +8,8 @@ from tqdm import tqdm
 import torch
 from numba import njit, prange
 
-from scripts.cell_state.cell_state_dataset import fill_gaps
+from scripts.cell_state.cell_state_dataset import get_train_test_dataset
+from torch.utils.data import DataLoader
 
 
 def get_matching_dim(ds1, ds2, dim: str) -> Tuple[np.ndarray]:
@@ -65,15 +66,15 @@ class TimeSeriesDataset(Dataset):
         self.time_dim = time_dim
 
         # matching data
-        target_time, input_time = get_matching_dim(
+        target_times, input_times = get_matching_dim(
             target_data, input_data, self.time_dim
         )
         target_sids, input_sids = get_matching_dim(
             target_data, input_data, self.basin_dim
         )
 
-        input_data = input_data.sel(time=input_time, station_id=input_sids)
-        target_data = target_data.sel(time=target_time, station_id=target_sids)
+        input_data = input_data.sel(time=input_times, station_id=input_sids)
+        target_data = target_data.sel(time=target_times, station_id=target_sids)
 
         self.input_data = input_data
         self.target_data = target_data
@@ -145,11 +146,48 @@ class TimeSeriesDataset(Dataset):
 
         #  metadata
         time = self.times[int(target_ix - self.seq_length) : int(target_ix)]
-        meta = dict(spatial_unit=spatial_unit, time=time,)
+        meta = dict(spatial_unit=spatial_unit, time=time)
 
         data = dict(x_d=X, y=y, meta=meta)
 
         return data
+
+
+def get_train_test_dataloader(
+    input_data: xr.Dataset,
+    target_data: xr.Dataset,
+    target_variable: str,
+    input_variables: List[str],
+    seq_length: int = 64,
+    basin_dim: str = "station_id",
+    time_dim: str = "time",
+    batch_size: int = 256,
+    train_start_date: pd.Timestamp = pd.to_datetime("01-01-1998"),
+    train_end_date: pd.Timestamp = pd.to_datetime("12-31-2006"),
+    test_start_date: pd.Timestamp = pd.to_datetime("01-01-2007"),
+    test_end_date: pd.Timestamp = pd.to_datetime("01-01-2009"),
+) -> Tuple[DataLoader, DataLoader]:
+    train_dataset = TimeSeriesDataset(
+        input__data=input_data.sel(time=slice(train_start_date, train_end_date)),
+        target_data=target_data.sel(time=slice(train_start_date, train_end_date)),
+        target_variable=target_variable,
+        input_variables=input_variables,
+        seq_length=seq_length,
+        basin_dim=basin_dim,
+        time_dim=time_dim,
+    )
+    test_dataset = TimeSeriesDataset(
+        input__data=input_data.sel(time=slice(test_start_date, test_end_date)),
+        target_data=target_data.sel(time=slice(test_start_date, test_end_date)),
+        target_variable=target_variable,
+        input_variables=input_variables,
+        seq_length=seq_length,
+        basin_dim=basin_dim,
+        time_dim=time_dim,
+    )
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    return train_loader, test_loader
 
 
 if __name__ == "__main__":
@@ -173,8 +211,18 @@ if __name__ == "__main__":
         time_dim="time",
     )
 
-    # initialize datalaoder
-    from torch.utils.data import DataLoader
+    # initialize dataloaders
+    train_dl, test_dl = get_train_test_dataloader(
+        input_data=input_data,
+        target_data=target_data,
+        target_variable="sm",
+        input_variables=["precipitation"],
+        seq_length=64,
+        basin_dim="station_id",
+        time_dim="time",
+        batch_size=256,
+        test_proportion=0.2,
+    )
 
     dl = DataLoader(td, batch_size=100)
     data = dl.__iter__().__next__()
