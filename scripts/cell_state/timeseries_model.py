@@ -65,7 +65,14 @@ def train(
     #  train the model
     losses = []
     for epoch in range(n_epochs):
-        _epoch_loss = _train_epoch(dataloader, loss_fn, optimizer, epoch=epoch, device=device)
+        _epoch_loss = _train_epoch(
+            model=model,
+            dataloader=dataloader,
+            loss_fn=loss_fn,
+            optimizer=optimizer,
+            epoch=epoch,
+            device=device,
+        )
         losses.append(_epoch_loss)
 
     return losses
@@ -100,6 +107,7 @@ def predict(model: LinearModel, dataloader: DataLoader,) -> xr.Dataset:
 
 if __name__ == "__main__":
     from scripts.read_nh_results import calculate_all_error_metrics
+
     data_dir = Path("/datadrive/data")
     device = "cuda:0"
 
@@ -141,25 +149,25 @@ if __name__ == "__main__":
     n_epochs = 1
 
     losses = train(
-        model=model, 
-        dataloader=train_dl, 
-        learning_rate=learning_rate, 
+        model=model,
+        dataloader=train_dl,
+        learning_rate=learning_rate,
         l2_penalty=l2_penalty,
-        device=device, 
+        device=device,
         n_epochs=n_epochs,
     )
 
-    # PREDICT
+    #  PREDICT
     preds = predict(model=model, dataloader=test_dl)
 
-    # EVALUATE with error metrics 
+    #  EVALUATE with error metrics
     errors = calculate_all_error_metrics(
-        preds, 
+        preds,
         basin_coord="station_id",
         time_coord="time",
         obs_var="y",
         sim_var="y_hat",
-        metrics=["NSE", "Pearson-r"]
+        metrics=["NSE", "Pearson-r"],
     )
 
     assert False

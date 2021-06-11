@@ -144,7 +144,9 @@ class TimeSeriesDataset(Dataset):
         # [seq_length, input_features]
         x_d = self.x_d[spatial_unit][int(target_ix - self.seq_length) : int(target_ix)]
         # [seq_length, 1]
-        y = np.expand_dims(self.y[spatial_unit][int(target_ix - self.seq_length) : int(target_ix)], -1)
+        y = np.expand_dims(
+            self.y[spatial_unit][int(target_ix - self.seq_length) : int(target_ix)], -1
+        )
 
         #  to torch.Tensor
         x_d = Tensor(x_d)
