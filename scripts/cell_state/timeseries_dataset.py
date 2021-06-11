@@ -58,6 +58,7 @@ class TimeSeriesDataset(Dataset):
         seq_length: int = 64,
         basin_dim: str = "station_id",
         time_dim: str = "time",
+        desc: str = "Creating Samples",
     ):
         self.target_variable = target_variable
         self.input_variables = input_variables
@@ -81,10 +82,11 @@ class TimeSeriesDataset(Dataset):
 
         self.create_lookup_table_of_valid_samples(
             input_data=self.input_data, target_data=self.target_data,
+            desc=desc,
         )
 
     def create_lookup_table_of_valid_samples(
-        self, input_data: Union[xr.Dataset, xr.DataArray], target_data: xr.DataArray
+        self, input_data: Union[xr.Dataset, xr.DataArray], target_data: xr.DataArray, desc: str = "Creating Samples"
     ) -> None:
         lookup: List[Tuple[str, int]] = []
         spatial_units_without_samples: List[Union[str, int]] = []
@@ -93,7 +95,7 @@ class TimeSeriesDataset(Dataset):
         self.times: List[float] = []
 
         # spatial_unit = target_data[self.basin_dim].values[0]
-        pbar = tqdm(target_data.station_id.values, desc=f"Creating Samples")
+        pbar = tqdm(target_data.station_id.values, desc=desc)
 
         #  iterate over each basin
         for spatial_unit in pbar:
@@ -175,6 +177,7 @@ def get_train_test_dataloader(
         seq_length=seq_length,
         basin_dim=basin_dim,
         time_dim=time_dim,
+        desc="Creating Train Samples",
     )
     test_dataset = TimeSeriesDataset(
         input_data=input_data.sel(time=slice(test_start_date, test_end_date)),
@@ -184,6 +187,7 @@ def get_train_test_dataloader(
         seq_length=seq_length,
         basin_dim=basin_dim,
         time_dim=time_dim,
+        desc="Creating Test Samples",
     )
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
@@ -211,7 +215,8 @@ if __name__ == "__main__":
     #     time_dim="time",
     # )
 
-    # initialize dataloaders
+    # initialize dataloaders]
+    batch_size = 256
     train_dl, test_dl = get_train_test_dataloader(
         input_data=input_data,
         target_data=target_data,
@@ -220,11 +225,11 @@ if __name__ == "__main__":
         seq_length=64,
         basin_dim="station_id",
         time_dim="time",
-        batch_size=256,
+        batch_size=batch_size,
     )
 
     data = train_dl.__iter__().__next__()
-    assert data["x_d"].shape == (100, 64, 1)
+    assert data["x_d"].shape == (batch_size, 64, 1)
 
     times = data["meta"]["time"].numpy().astype("datetime64[ns]")
     assert False
