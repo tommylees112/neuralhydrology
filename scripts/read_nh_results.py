@@ -13,7 +13,11 @@ import pprint
 
 from neuralhydrology.evaluation import RegressionTester as Tester
 from neuralhydrology.utils.config import Config
-from neuralhydrology.evaluation.metrics import calculate_all_metrics, AllNaNError
+from neuralhydrology.evaluation.metrics import (
+    calculate_all_metrics,
+    AllNaNError,
+    calculate_metrics,
+)
 
 
 def run_evaluation(run_dir: Path, epoch: Optional[int] = None, period: str = "test"):
@@ -119,6 +123,7 @@ def calculate_all_error_metrics(
     time_coord: str = "date",
     obs_var: str = "discharge_spec_obs",
     sim_var: str = "discharge_spec_sim",
+    metrics: Optional[List[str]] = None,
 ) -> xr.Dataset:
     all_errors: List[pd.DataFrame] = []
     missing_data: List[str] = []
@@ -126,18 +131,29 @@ def calculate_all_error_metrics(
     pbar = tqdm(preds[basin_coord].values, desc="Calculating Errors")
     for sid in pbar:
         pbar.set_postfix_str(sid)
-        try:
-            errors = calculate_all_metrics(
-                sim=preds[sim_var]
-                .rename({basin_coord: "station_id", time_coord: "date"})
-                .sel(station_id=sid),
-                obs=preds[obs_var]
-                .rename({basin_coord: "station_id", time_coord: "date"})
-                .sel(station_id=sid),
-            )
-            all_errors.append(pd.DataFrame({sid: errors}).T)
-        except AllNaNError:
-            missing_data.append(sid)
+        sim = (
+            preds[sim_var]
+            .rename({basin_coord: "station_id", time_coord: "date"})
+            .sel(station_id=sid)
+        )
+        obs = (
+            preds[obs_var]
+            .rename({basin_coord: "station_id", time_coord: "date"})
+            .sel(station_id=sid)
+        )
+
+        if metrics is None:
+            try:
+                errors = calculate_all_metrics(sim=sim, obs=obs,)
+                all_errors.append(pd.DataFrame({sid: errors}).T)
+            except AllNaNError:
+                missing_data.append(sid)
+        else:
+            try:
+                errors = calculate_metrics(sim=sim, obs=obs, metrics=metrics)
+                all_errors.append(pd.DataFrame({sid: errors}).T)
+            except AllNaNError:
+                missing_data.append(sid)
 
     errors = pd.concat(all_errors).to_xarray().rename({"index": basin_coord})
     return errors

@@ -81,12 +81,14 @@ class TimeSeriesDataset(Dataset):
         self.target_data = target_data
 
         self.create_lookup_table_of_valid_samples(
-            input_data=self.input_data, target_data=self.target_data,
-            desc=desc,
+            input_data=self.input_data, target_data=self.target_data, desc=desc,
         )
 
     def create_lookup_table_of_valid_samples(
-        self, input_data: Union[xr.Dataset, xr.DataArray], target_data: xr.DataArray, desc: str = "Creating Samples"
+        self,
+        input_data: Union[xr.Dataset, xr.DataArray],
+        target_data: xr.DataArray,
+        desc: str = "Creating Samples",
     ) -> None:
         lookup: List[Tuple[str, int]] = []
         spatial_units_without_samples: List[Union[str, int]] = []
