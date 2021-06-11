@@ -141,18 +141,18 @@ class TimeSeriesDataset(Dataset):
     def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
         spatial_unit, target_ix = self.lookup_table[idx]
         # X, y samples
-        X = self.x_d[spatial_unit][int(target_ix - self.seq_length) : int(target_ix)]
+        x_d = self.x_d[spatial_unit][int(target_ix - self.seq_length) : int(target_ix)]
         y = self.y[spatial_unit][int(target_ix - self.seq_length) : int(target_ix)]
 
         #  to torch.Tensor
-        y = Tensor(X)
-        X = Tensor(y)
+        x_d = Tensor(x_d)
+        y = Tensor(y)
 
         #  metadata
         time = self.times[int(target_ix - self.seq_length) : int(target_ix)]
         meta = dict(spatial_unit=spatial_unit, time=time)
 
-        data = dict(x_d=X, y=y, meta=meta)
+        data = dict(x_d=x_d, y=y, meta=meta)
 
         return data
 

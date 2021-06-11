@@ -123,6 +123,9 @@ if __name__ == "__main__":
         test_start_date=pd.to_datetime("01-01-2007"),
         test_end_date=pd.to_datetime("01-01-2009"),
     )
+    data = train_dl.__iter__().__next__()
+    x, y = data["x_d"], data["y"]
+    assert not all(x == y), "Data Leakage"
 
     # GET the model
     #  np.product(data["x_d"].shape[1:]) if data["x_d"].shape[0] == batch_size else np.product(data["x_d"].shape[1:])
@@ -133,7 +136,7 @@ if __name__ == "__main__":
     # TRAIN the model
     learning_rate = 1e-2
     l2_penalty = 1
-    n_epochs = 3
+    n_epochs = 1
 
     losses = train(
         model=model, 
@@ -141,6 +144,7 @@ if __name__ == "__main__":
         learning_rate=learning_rate, 
         l2_penalty=l2_penalty,
         device=device, 
+        n_epochs=n_epochs,
     )
 
     # PREDICT
