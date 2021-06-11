@@ -123,6 +123,7 @@ def train_model_loop(
     num_workers: int = 4,
 ) -> Tuple[List[float], BaseModel, Optional[Tuple[DataLoader]]]:
     #  1. create dataset (input, target)
+    print("-- Data Loaded --")
     dataset = CellStateDataset(
         input_data=input_data, 
         target_data=target_data, 
@@ -217,7 +218,7 @@ if __name__ == "__main__":
     data_vars = [v for v in target_data.data_vars]
     target_features = data_vars if len(data_vars) > 1 else ["sm"]
     for feature in target_features:
-        print(f"Training Model for {feature}")
+        print(f"-- Training Model for {feature} --")
         train_losses, model, test_loader = train_model_loop(
             input_data=input_data,
             target_data=target_data[feature],  #  needs to be xr.DataArray
@@ -235,6 +236,7 @@ if __name__ == "__main__":
         test_loaders.append(test_loader)
 
     #  run forward pass and convert to xarray object
+    print("-- Running Test-set Predictions --")
     preds = calculate_predictions(model, test_loader)
 
     # extract weights and biases

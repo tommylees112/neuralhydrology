@@ -153,7 +153,7 @@ class CellStateDataset(Dataset):
         basin = str(self.basin_samples[item])
         time = self.time_samples[item]
         x, y = self.samples[item]
-        data = {"X": x, "y": y, "meta": {"basin": basin, "time": time}}
+        data = {"x_d": x, "y": y, "meta": {"basin": basin, "time": time}}
 
         return data
 
