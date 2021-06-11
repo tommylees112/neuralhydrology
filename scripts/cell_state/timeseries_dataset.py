@@ -149,7 +149,8 @@ class TimeSeriesDataset(Dataset):
 
         data = dict(
             x_d=X,
-            y=y
+            y=y,
+            meta=meta
         )
 
         return data
