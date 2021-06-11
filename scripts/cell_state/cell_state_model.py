@@ -48,6 +48,8 @@ def train_model(
     l2_penalty: float = 0,
     val_split: bool = False,
     desc: str = "Training Epoch",
+    batch_size: int = 256,
+    num_workers: int = 4, 
 ) -> Tuple[Any, List[float], List[float]]:
     #  GET loss function
     loss_fn = torch.nn.MSELoss(reduction="sum")
@@ -69,14 +71,15 @@ def train_model(
             #  create a unique test, val set (random) for each ...
             train_sampler, val_sampler = train_validation_split(train_dataset)
             train_loader = DataLoader(
-                train_dataset, batch_size=256, sampler=train_sampler
+                train_dataset, batch_size=batch_size, sampler=train_sampler, num_workers=num_workers
             )
-            val_loader = DataLoader(train_dataset, batch_size=256, sampler=val_sampler)
+            val_loader = DataLoader(train_dataset, batch_size=batch_size, sampler=val_sampler, num_workers=num_workers)
         else:
-            train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True)
+            train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
 
         for data in train_loader:
-            y_pred = model(X)
+            y_pred = model(data)
+            y = data["y"][:, ]
             loss = loss_fn(y_pred, y)
 
             # train/update the weight
@@ -117,6 +120,7 @@ def train_model_loop(
     dropout: float = 0.0,
     device: str = "cpu",
     l2_penalty: float = 0,
+    num_workers: int = 4,
 ) -> Tuple[List[float], BaseModel, Optional[Tuple[DataLoader]]]:
     #  1. create dataset (input, target)
     dataset = CellStateDataset(
@@ -131,11 +135,11 @@ def train_model_loop(
     if train_test:
         #  build the train, test, validation
         train_dataset, test_dataset = get_train_test_dataset(dataset)
-        test_loader = DataLoader(test_dataset, batch_size=256, shuffle=False)
+        test_loader = DataLoader(test_dataset, batch_size=256, shuffle=False, num_workers=num_workers)
     else:
         train_dataset = dataset
         test_dataset = dataset
-        test_loader = DataLoader(dataset, batch_size=256, shuffle=False)
+        test_loader = DataLoader(dataset, batch_size=256, shuffle=False, num_workers=num_workers)
 
     #  3. initialise the model
     model = LinearModel(D_in=dataset.dimensions, dropout=dropout)
@@ -208,6 +212,7 @@ if __name__ == "__main__":
 
     train_test = True
     train_val = False
+    num_workers = 4
 
     data_vars = [v for v in target_data.data_vars]
     target_features = data_vars if len(data_vars) > 1 else ["sm"]
@@ -221,6 +226,7 @@ if __name__ == "__main__":
             return_loaders=True,
             start_date=start_date,
             end_date=end_date,
+            num_workers=num_workers,
         )
 
         # store outputs of training process
