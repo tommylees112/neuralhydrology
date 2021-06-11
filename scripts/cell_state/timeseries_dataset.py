@@ -89,6 +89,7 @@ class TimeSeriesDataset(Dataset):
         spatial_units_without_samples: List[Union[str, int]] = []
         self.x_d: Dict[str, np.ndarray] = {}
         self.y: Dict[str, np.ndarray] = {}
+        self.times: List[pd.Timestamp] = []
 
         # spatial_unit = target_data[self.basin_dim].values[0]
         pbar = tqdm(target_data.station_id.values, desc=f"Creating Samples")
@@ -115,6 +116,10 @@ class TimeSeriesDataset(Dataset):
             else:
                 spatial_units_without_samples.append(spatial_unit)
 
+            if self.times == []:
+                assert False
+                self.times = in_df.index
+
         #  save lookup from INT: (spatial_unit, index) for valid samples
         self.lookup_table: Dict[int, Tuple[str, int]] = {
             i: elem for i, elem in enumerate(lookup)
@@ -135,6 +140,12 @@ class TimeSeriesDataset(Dataset):
         #  to torch.Tensor
         y = Tensor(X)
         X = Tensor(y)
+
+        # metadata
+        meta = dict(
+            spatial_unit=spatial_unit,
+            time=time,
+        )
 
         data = dict(
             x_d=X,
