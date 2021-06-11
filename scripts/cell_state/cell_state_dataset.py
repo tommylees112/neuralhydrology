@@ -45,7 +45,7 @@ def fill_gaps(
 class CellStateDataset(Dataset):
     def __init__(
         self,
-        input_data: xr.Dataset,     #  cell state (`hs` dimensions)
+        input_data: xr.Dataset,  #  cell state (`hs` dimensions)
         target_data: xr.DataArray,  #  soil moisture
         start_date: pd.Timestamp,
         end_date: pd.Timestamp,

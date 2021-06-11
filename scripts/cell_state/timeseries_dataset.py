@@ -33,13 +33,13 @@ def validate(x_d: List[np.ndarray], y: List[np.ndarray], seq_length: int):
             continue
 
         #  2. NaN in the dynamic inputs
-        _x_d = x_d[start_input_idx : target_index]
+        _x_d = x_d[start_input_idx:target_index]
         if np.any(np.isnan(_x_d)):
             flag[target_index] = 0
             continue
 
         #  3. NaN in the outputs (TODO: only for training period)
-        _y = y[start_input_idx : target_index]
+        _y = y[start_input_idx:target_index]
         if np.any(np.isnan(_y)):
             flag[target_index] = 0
             continue
@@ -117,8 +117,12 @@ class TimeSeriesDataset(Dataset):
                 spatial_units_without_samples.append(spatial_unit)
 
             if self.times == []:
-                # store times as FLOAT64 objects (convert later)
-                self.times = np.array(in_df.index.to_list()).astype(np.datetime64).astype(np.float64)
+                #  store times as FLOAT64 objects (convert later)
+                self.times = (
+                    np.array(in_df.index.to_list())
+                    .astype(np.datetime64)
+                    .astype(np.float32)
+                )
 
         #  save lookup from INT: (spatial_unit, index) for valid samples
         self.lookup_table: Dict[int, Tuple[str, int]] = {
@@ -132,39 +136,33 @@ class TimeSeriesDataset(Dataset):
     def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
         spatial_unit, target_ix = self.lookup_table[idx]
         # X, y samples
-        X = self.x_d[spatial_unit][
-            int(target_ix - self.seq_length) : int(target_ix)
-        ]
+        X = self.x_d[spatial_unit][int(target_ix - self.seq_length) : int(target_ix)]
         y = self.y[spatial_unit][int(target_ix - self.seq_length) : int(target_ix)]
 
         #  to torch.Tensor
         y = Tensor(X)
         X = Tensor(y)
 
-        # metadata
+        #  metadata
         time = self.times[int(target_ix - self.seq_length) : int(target_ix)]
-        meta = dict(
-            spatial_unit=spatial_unit,
-            time=time,
-        )
+        meta = dict(spatial_unit=spatial_unit, time=time,)
 
-        data = dict(
-            x_d=X,
-            y=y,
-            meta=meta
-        )
+        data = dict(x_d=X, y=y, meta=meta)
 
         return data
 
 
 if __name__ == "__main__":
-    # load data
+    #  load data
     from pathlib import Path
+
     data_dir = Path("/datadrive/data")
     target_data = xr.open_dataset(data_dir / "SOIL_MOISTURE/interpolated_esa_cci_sm.nc")
-    input_data = xr.open_dataset(data_dir / "SOIL_MOISTURE/interpolated_normalised_camels_gb.nc")
+    input_data = xr.open_dataset(
+        data_dir / "SOIL_MOISTURE/interpolated_normalised_camels_gb.nc"
+    )
 
-    # initialize dataset 
+    #  initialize dataset
     td = TimeSeriesDataset(
         input_data=input_data,
         target_data=target_data,
@@ -172,12 +170,15 @@ if __name__ == "__main__":
         input_variables=["precipitation"],
         seq_length=64,
         basin_dim="station_id",
-        time_dim="time"
+        time_dim="time",
     )
 
-    # initialize datalaoder 
+    # initialize datalaoder
     from torch.utils.data import DataLoader
+
     dl = DataLoader(td, batch_size=100)
-    data = dl.__iter__().__next__() 
+    data = dl.__iter__().__next__()
     assert data["x_d"].shape == (100, 64, 1)
+
+    times = data["meta"]["time"].astype(np.datetime64)
     assert False
