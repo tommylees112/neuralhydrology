@@ -118,11 +118,10 @@ class TimeSeriesDataset(Dataset):
 
             if self.times == []:
                 #  store times as float32 to keep pytorch happy
-                assert False
+                # assert False
                 self.times = (
-                    np.array(in_df.index.to_list())
-                    .astype(np.datetime64)
-                    .astype(np.float32)
+                    in_df.index.values.astype(str)
+                    # .astype(np.float32)
                 )
 
         #  save lookup from INT: (spatial_unit, index) for valid samples
