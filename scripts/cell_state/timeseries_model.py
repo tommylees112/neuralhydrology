@@ -18,6 +18,7 @@ def _train_epoch(
     loss_fn: torch.nn.MSELoss,
     optimizer: torch.optim.Adam,
     epoch: Optional[int] = None,
+    device: str = "cpu",
 ) -> np.ndarray:
     desc = f"Training Model Epoch {epoch}" if epoch is not None else "Train Epoch"
     pbar = tqdm(dataloader, desc=desc)
@@ -63,7 +64,7 @@ def train(
     #  train the model
     losses = []
     for epoch in range(n_epochs):
-        _epoch_loss = _train_epoch(dataloader, loss_fn, optimizer, epoch=epoch)
+        _epoch_loss = _train_epoch(dataloader, loss_fn, optimizer, epoch=epoch, device=device)
         losses.append(_epoch_loss)
 
     return losses
