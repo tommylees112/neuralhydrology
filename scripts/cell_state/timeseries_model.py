@@ -78,7 +78,7 @@ def train(
     return losses
 
 
-def predict(model: LinearModel, dataloader: DataLoader,) -> xr.Dataset:
+def predict(model: LinearModel, dataloader: DataLoader, device: str = "cpu") -> xr.Dataset:
     predictions = defaultdict(list)
     model.eval()
     with torch.no_grad():
@@ -158,7 +158,7 @@ if __name__ == "__main__":
     )
 
     #  PREDICT
-    preds = predict(model=model, dataloader=test_dl)
+    preds = predict(model=model, dataloader=test_dl, device=device)
 
     #  EVALUATE with error metrics
     errors = calculate_all_error_metrics(
@@ -169,5 +169,7 @@ if __name__ == "__main__":
         sim_var="y_hat",
         metrics=["NSE", "Pearson-r"],
     )
+
+    print(errors)
 
     assert False
