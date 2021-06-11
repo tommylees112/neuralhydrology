@@ -174,6 +174,7 @@ def get_train_test_dataloader(
     train_end_date: pd.Timestamp = pd.to_datetime("12-31-2006"),
     test_start_date: pd.Timestamp = pd.to_datetime("01-01-2007"),
     test_end_date: pd.Timestamp = pd.to_datetime("01-01-2009"),
+    num_workers: int = 4,
 ) -> Tuple[DataLoader, DataLoader]:
     train_dataset = TimeSeriesDataset(
         input_data=input_data.sel(time=slice(train_start_date, train_end_date)),
@@ -195,8 +196,8 @@ def get_train_test_dataloader(
         time_dim=time_dim,
         desc="Creating Test Samples",
     )
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
     return train_loader, test_loader
 
 
@@ -223,19 +224,24 @@ if __name__ == "__main__":
 
     # initialize dataloaders]
     batch_size = 256
+    seq_length = 64
+    num_workers = 4
+    input_variables = ["precipitation"]
+
     train_dl, test_dl = get_train_test_dataloader(
         input_data=input_data,
         target_data=target_data,
         target_variable="sm",
-        input_variables=["precipitation"],
-        seq_length=64,
+        input_variables=input_variables,
+        seq_length=seq_length,
         basin_dim="station_id",
         time_dim="time",
         batch_size=batch_size,
+        num_workers=num_workers,
     )
 
     data = train_dl.__iter__().__next__()
-    assert data["x_d"].shape == (batch_size, 64, 1)
+    assert data["x_d"].shape == (batch_size, seq_length, len(input_variables))
 
     times = data["meta"]["time"].numpy().astype("datetime64[ns]")
     assert False

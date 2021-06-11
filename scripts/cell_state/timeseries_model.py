@@ -119,6 +119,7 @@ if __name__ == "__main__":
 
     #  GET dataloader
     batch_size = 256
+    num_workers = 4
     train_dl, test_dl = get_train_test_dataloader(
         input_data=input_data,
         target_data=target_data,
@@ -132,6 +133,7 @@ if __name__ == "__main__":
         train_end_date=pd.to_datetime("12-31-2006"),
         test_start_date=pd.to_datetime("01-01-2007"),
         test_end_date=pd.to_datetime("01-01-2009"),
+        num_workers=num_workers,
     )
     data = train_dl.__iter__().__next__()
     x, y = data["x_d"], data["y"]
