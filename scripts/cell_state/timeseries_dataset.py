@@ -221,7 +221,6 @@ if __name__ == "__main__":
         basin_dim="station_id",
         time_dim="time",
         batch_size=256,
-        test_proportion=0.2,
     )
 
     dl = DataLoader(td, batch_size=100)
