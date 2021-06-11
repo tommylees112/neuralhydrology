@@ -106,9 +106,10 @@ def train_model(
 
 #  ALL Training Process
 def train_model_loop(
-    config: Config,
     input_data: xr.Dataset,
     target_data: xr.DataArray,
+    start_date: pd.Timestamp,
+    end_date: pd.Timestamp,
     train_test: bool = True,
     train_val: bool = False,
     return_loaders: bool = True,
@@ -119,7 +120,11 @@ def train_model_loop(
 ) -> Tuple[List[float], BaseModel, Optional[Tuple[DataLoader]]]:
     #  1. create dataset (input, target)
     dataset = CellStateDataset(
-        input_data=input_data, target_data=target_data, device=device,
+        input_data=input_data, 
+        target_data=target_data, 
+        device=device,
+        start_date=start_date,
+        end_date=end_date,
     )
 
     #  2. create train-test split
@@ -195,6 +200,9 @@ if __name__ == "__main__":
     #  load in target data (Soil Moisture)
     target_data = xr.open_dataset(data_dir / "SOIL_MOISTURE/interpolated_esa_cci_sm.nc")
 
+    start_date = pd.to_datetime(input_data.time.min().values)
+    end_date = pd.to_datetime(input_data.time.max().values)
+
     losses_list = []
     models = []
     test_loaders = []
@@ -206,12 +214,13 @@ if __name__ == "__main__":
     target_features = data_vars if len(data_vars) > 1 else ["sm"]
     for feature in target_features:
         train_losses, model, test_loader = train_model_loop(
-            config=cfg,
             input_data=input_data,
             target_data=target_data[feature],  #  needs to be xr.DataArray
             train_test=train_test,
             train_val=train_val,
             return_loaders=True,
+            start_date=start_date,
+            end_date=end_date,
         )
 
         # store outputs of training process
