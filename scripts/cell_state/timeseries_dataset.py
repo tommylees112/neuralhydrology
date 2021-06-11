@@ -168,7 +168,7 @@ def get_train_test_dataloader(
     test_end_date: pd.Timestamp = pd.to_datetime("01-01-2009"),
 ) -> Tuple[DataLoader, DataLoader]:
     train_dataset = TimeSeriesDataset(
-        input__data=input_data.sel(time=slice(train_start_date, train_end_date)),
+        input_data=input_data.sel(time=slice(train_start_date, train_end_date)),
         target_data=target_data.sel(time=slice(train_start_date, train_end_date)),
         target_variable=target_variable,
         input_variables=input_variables,
@@ -177,7 +177,7 @@ def get_train_test_dataloader(
         time_dim=time_dim,
     )
     test_dataset = TimeSeriesDataset(
-        input__data=input_data.sel(time=slice(test_start_date, test_end_date)),
+        input_data=input_data.sel(time=slice(test_start_date, test_end_date)),
         target_data=target_data.sel(time=slice(test_start_date, test_end_date)),
         target_variable=target_variable,
         input_variables=input_variables,
@@ -200,16 +200,16 @@ if __name__ == "__main__":
         data_dir / "SOIL_MOISTURE/interpolated_normalised_camels_gb.nc"
     )
 
-    #  initialize dataset
-    td = TimeSeriesDataset(
-        input_data=input_data,
-        target_data=target_data,
-        target_variable="sm",
-        input_variables=["precipitation"],
-        seq_length=64,
-        basin_dim="station_id",
-        time_dim="time",
-    )
+    # #  initialize dataset
+    # td = TimeSeriesDataset(
+    #     input_data=input_data,
+    #     target_data=target_data,
+    #     target_variable="sm",
+    #     input_variables=["precipitation"],
+    #     seq_length=64,
+    #     basin_dim="station_id",
+    #     time_dim="time",
+    # )
 
     # initialize dataloaders
     train_dl, test_dl = get_train_test_dataloader(
@@ -223,8 +223,7 @@ if __name__ == "__main__":
         batch_size=256,
     )
 
-    dl = DataLoader(td, batch_size=100)
-    data = dl.__iter__().__next__()
+    data = train_dl.__iter__().__next__()
     assert data["x_d"].shape == (100, 64, 1)
 
     times = data["meta"]["time"].numpy().astype("datetime64[ns]")
