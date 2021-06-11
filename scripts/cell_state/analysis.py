@@ -81,7 +81,7 @@ def calculate_raw_correlations(
         )
         datasets.append(sm_dataset)
 
-    # Calculate the correlations for each
+    # Calculate the correlations for each level
     all_correlations = np.zeros((len(features), 64))
 
     pbar = tqdm(np.arange(len(datasets)), desc="Calculating Correlation")

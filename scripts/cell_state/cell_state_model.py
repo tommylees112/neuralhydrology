@@ -123,7 +123,6 @@ def train_model_loop(
     num_workers: int = 4,
 ) -> Tuple[List[float], BaseModel, Optional[Tuple[DataLoader]]]:
     #  1. create dataset (input, target)
-    print("-- Data Loaded --")
     dataset = CellStateDataset(
         input_data=input_data, 
         target_data=target_data, 
@@ -131,6 +130,7 @@ def train_model_loop(
         start_date=start_date,
         end_date=end_date,
     )
+    print("Data Loaded")
 
     #  2. create train-test split
     if train_test:
@@ -141,12 +141,14 @@ def train_model_loop(
         train_dataset = dataset
         test_dataset = dataset
         test_loader = DataLoader(dataset, batch_size=256, shuffle=False, num_workers=num_workers)
+    print("Train-Test-Val Split")
 
     #  3. initialise the model
     model = LinearModel(D_in=dataset.dimensions, dropout=dropout)
     model = model.to(device)
 
     # 4. Run training loop (iterate over batches)
+    print("Start Training")
     model, train_losses, _ = train_model(
         model,
         train_dataset,
@@ -228,6 +230,7 @@ if __name__ == "__main__":
             start_date=start_date,
             end_date=end_date,
             num_workers=num_workers,
+            l2_penalty=2,
         )
 
         # store outputs of training process
@@ -244,5 +247,6 @@ if __name__ == "__main__":
     ws, bs = get_all_models_weights(models)
 
     #  calculate raw correlations (cell state and values)
+    assert False, "No need to reload the CellStateDataset"
     print("-- Running RAW Correlations --")
-    all_corrs = calculate_raw_correlations(target_data, input_data, config=cfg)
+    all_corrs = calculate_raw_correlations(norm_sm=target_data, cs_data=input_data)
