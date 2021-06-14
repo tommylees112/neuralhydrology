@@ -42,6 +42,25 @@ def fill_gaps(
     return ds
 
 
+def dataset_dimensions_to_variable(
+    ds: xr.Dataset, 
+    variable: str = "cell_state", 
+    time_dim: str = "time", 
+    pixel_dim: str = "station_id",
+    dimension_to_convert_to_variable_dim: str = "dimension", 
+) -> xr.Dataset:
+    # set the order of dimensions
+    ds = ds.transpose(time_dim, pixel_dim, dimension_to_convert_to_variable_dim)
+    new_ds = xr.Dataset(
+        {
+            f"dim{i}": ((time_dim, pixel_dim), ds[variable].values[:, :, i]) 
+            for i in range(64)
+        },
+        coords={time_dim: ds[time_dim], pixel_dim: ds[pixel_dim]}
+    )
+    return new_ds
+
+
 class CellStateDataset(Dataset):
     def __init__(
         self,
