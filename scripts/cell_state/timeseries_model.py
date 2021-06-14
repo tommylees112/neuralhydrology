@@ -98,7 +98,7 @@ def predict(model: LinearModel, dataloader: DataLoader, device: str = "cpu") -> 
             spatial_unit = data["meta"]["spatial_unit"].numpy()
 
             #  Coords / Dimensions
-            predictions["time"].extend((time))
+            predictions["time"].extend(time)
             predictions["station_id"].extend(spatial_unit)
 
             # Variables
