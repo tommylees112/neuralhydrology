@@ -1,7 +1,7 @@
 # --- Experiment configurations --------------------------------------------------------------------
 
 # experiment name, used as folder name
-experiment_name: esa_cci_sm_lstm
+experiment_name: multi_output_sm_discharge_spec
 
 # place to store run directory (if empty runs are stored in code_dir/runs/)
 run_dir: /datadrive/data/runs
