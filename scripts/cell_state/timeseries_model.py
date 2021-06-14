@@ -109,6 +109,12 @@ def predict(model: LinearModel, dataloader: DataLoader, device: str = "cpu") -> 
     return to_xarray(predictions)
 
 
+def get_duplicates_index(arr: np.ndarray) -> np.ndarray:
+    _, idxs = np.unique(arr, return_index=True)
+    dups = np.arange(len(arr))[~np.isin(idxs, np.arange(len(arr)))]
+    return dups
+
+
 def round_preds_time_to_hour(preds: xr.Dataset) -> xr.Dataset:
     est_times = np.array([t.round('H') for t in pd.to_datetime(preds.sortby("time").time.values)])
 
@@ -117,6 +123,10 @@ def round_preds_time_to_hour(preds: xr.Dataset) -> xr.Dataset:
     est_not_expected = est_times[~ np.isin(est_times, exp_times)]
     exp_not_estimated = exp_times[~ np.isin(exp_times, est_times)]
     assert len(est_times) == len(exp_times), f"Expected but not present: {exp_not_estimated}\nUnexpected but present: {est_not_expected} in Estimated"
+    
+    # check that all are unique (no duplicates)
+    dups = get_duplicates_index(est_times)
+    assert len(np.unique(est_times)) == len(est_times), f"Expected all times to be unique. Duplicates: {est_times[dups]}"
 
     preds["time"] = est_times
     return preds
