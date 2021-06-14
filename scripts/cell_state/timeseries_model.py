@@ -90,11 +90,13 @@ def predict(model: LinearModel, dataloader: DataLoader, device: str = "cpu") -> 
             y_hat = model(data).squeeze()
             y = data["y"][:, -1, :].squeeze()
 
-            _time = pd.to_datetime(
+            _times = pd.to_datetime(
                 data["meta"]["time"].numpy().astype("datetime64[ns]")[:, -1]
             )
-            time = pd.to_datetime(f"{_time.day}-{_time.month}-{_time.year}")
-            assert False
+            # conversion of float to time is weird. Reset to start of day
+            time = pd.date_range(_times[0], _times[-1], freq="D")
+            assert len(_times) == len(time)
+            time = [t.replace(hour=0, minute=0, second=0, microsecond=0, nanosecond=0) for t in time]
             
             spatial_unit = data["meta"]["spatial_unit"].numpy()
 
@@ -114,12 +116,18 @@ if __name__ == "__main__":
 
     data_dir = Path("/datadrive/data")
     device = "cuda:0"
+    subset = True
 
     # GET data
     target_data = xr.open_dataset(data_dir / "SOIL_MOISTURE/interpolated_esa_cci_sm.nc")
     input_data = xr.open_dataset(
         data_dir / "SOIL_MOISTURE/interpolated_normalised_camels_gb.nc"
     )
+    
+    if subset:
+        pixels = np.random.choice(target_data.station_id.values, 5)
+        target_data = target_data.sel(station_id=pixels)
+        input_data = input_data.sel(station_id=pixels)
 
     #  GET dataloader
     batch_size = 256
