@@ -109,6 +109,19 @@ def predict(model: LinearModel, dataloader: DataLoader, device: str = "cpu") -> 
     return to_xarray(predictions)
 
 
+def round_preds_time_to_hour(preds: xr.Dataset) -> xr.Dataset:
+    est_times = np.array([t.round('H') for t in pd.to_datetime(preds.sortby("time").time.values)])
+
+    # check that all expected times are found (rounding errors should be caught here)
+    exp_times = pd.date_range(est_times.min(), est_times.max(), freq="D")
+    est_not_expected = est_times[~ np.isin(est_times, exp_times)]
+    exp_not_estimated = exp_times[~ np.isin(exp_times, est_times)]
+    assert len(est_times) == len(exp_times), f"Expected but not present: {exp_not_estimated}\nUnexpected but present: {est_not_expected} in Estimated"
+
+    preds["time"] = est_times
+    return preds
+
+
 if __name__ == "__main__":
     from scripts.read_nh_results import calculate_all_error_metrics
 
@@ -171,6 +184,7 @@ if __name__ == "__main__":
 
     #  PREDICT
     preds = predict(model=model, dataloader=test_dl, device=device)
+    preds = round_preds_time_to_hour(preds)
 
     #  EVALUATE with error metrics
     errors = calculate_all_error_metrics(
