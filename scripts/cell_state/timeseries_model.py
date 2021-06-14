@@ -90,15 +90,16 @@ def predict(model: LinearModel, dataloader: DataLoader, device: str = "cpu") -> 
             y_hat = model(data).squeeze()
             y = data["y"][:, -1, :].squeeze()
 
+            spatial_unit = data["meta"]["spatial_unit"].numpy()
             _times = pd.to_datetime(
                 data["meta"]["time"].numpy().astype("datetime64[ns]")[:, -1]
             )
-            # conversion of float to time is weird. Reset to start of day
-            time = [t.replace(hour=0, minute=0, second=0, microsecond=0, nanosecond=0) for t in _times]
-            spatial_unit = data["meta"]["spatial_unit"].numpy()
+            # TODO: convert the times POST-HOC 
+            # # conversion of float to time is weird. Reset to start of day
+            # time = [t.replace(hour=0, minute=0, second=0, microsecond=0, nanosecond=0) for t in _times]
 
             #  Coords / Dimensions
-            predictions["time"].extend(time)
+            predictions["time"].extend((_times))
             predictions["station_id"].extend(spatial_unit)
 
             # Variables
