@@ -94,10 +94,7 @@ def predict(model: LinearModel, dataloader: DataLoader, device: str = "cpu") -> 
                 data["meta"]["time"].numpy().astype("datetime64[ns]")[:, -1]
             )
             # conversion of float to time is weird. Reset to start of day
-            time = pd.date_range(_times[0], _times[-1], freq="D")
-            assert len(_times) == len(time)
             time = [t.replace(hour=0, minute=0, second=0, microsecond=0, nanosecond=0) for t in time]
-            
             spatial_unit = data["meta"]["spatial_unit"].numpy()
 
             #  Coords / Dimensions
