@@ -1,6 +1,6 @@
 from typing import Optional
 import torch
-from torch.utils.data import DataLoader, dataloader
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 from pathlib import Path
 import xarray as xr
@@ -40,8 +40,9 @@ def _train_epoch(
         _loss = loss.detach().cpu().numpy()
         _losses.append(_loss)
         pbar.set_postfix_str(_loss)
+    
     mean_loss = np.mean(_losses)
-    pbar.set_postfix_str(mean_loss)
+    pbar.set_postfix_str(f"{desc} Loss: {mean_loss}")
 
     return mean_loss
 

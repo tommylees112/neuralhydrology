@@ -7,8 +7,6 @@ from torch import Tensor
 from tqdm import tqdm
 import torch
 from numba import njit, prange
-
-from scripts.cell_state.cell_state_dataset import get_train_test_dataset
 from torch.utils.data import DataLoader
 
 
