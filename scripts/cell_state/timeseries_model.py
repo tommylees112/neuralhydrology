@@ -90,9 +90,12 @@ def predict(model: LinearModel, dataloader: DataLoader, device: str = "cpu") -> 
             y_hat = model(data).squeeze()
             y = data["y"][:, -1, :].squeeze()
 
-            time = pd.to_datetime(
+            _time = pd.to_datetime(
                 data["meta"]["time"].numpy().astype("datetime64[ns]")[:, -1]
             )
+            time = pd.to_datetime(f"{_time.day}-{_time.month}-{_time.year}")
+            assert False
+            
             spatial_unit = data["meta"]["spatial_unit"].numpy()
 
             #  Coords / Dimensions
