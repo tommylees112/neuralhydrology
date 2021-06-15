@@ -18,7 +18,7 @@ def isfinite_flat(arr: np.ndarray) -> np.ndarray:
     return arr[np.isfinite(arr)]
 
 
-def histogram_plot(arr: np.ndarray, ax = None, hist_kwargs = {}):
+def histogram_plot(arr: np.ndarray, ax = None, hist_kwargs = {}, zero_benchmark: bool = False):
     import seaborn as sns 
     import matplotlib.pyplot as plt
 
@@ -26,7 +26,15 @@ def histogram_plot(arr: np.ndarray, ax = None, hist_kwargs = {}):
         _, ax = plt.subplots(figsize=(12, 4))
     ax.hist(arr, alpha=0.6, bins=50, density=True, **hist_kwargs)
 
-    ax.axvline(np.median(arr), ls="--", color="k", alpha=0.8)
+    try: 
+        color = hist_kwargs["color"]
+    except KeyError:
+        color = "k"
+    ax.axvline(np.median(arr), ls="--", color=color, alpha=0.8)
+
+    if zero_benchmark:
+        ax.axvline(0, ls=":", color="k", alpha=0.4, label="Mean Benchmark")
+
     sns.despine()
     ax.set_xlabel("Metric")
     return ax

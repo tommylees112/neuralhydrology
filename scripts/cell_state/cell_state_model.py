@@ -40,6 +40,70 @@ class LinearModel(nn.Module):
         return self.model(self.dropout(data["x_d"].squeeze()))
 
 
+class NonLinearModel(nn.Module):
+    def __init__(
+        self, input_size: int, 
+        hidden_sizes: List[int], 
+        activation: str = "tanh",
+        dropout: float = 0.0, 
+        **kwargs
+    ):
+        super(NonLinearModel, self).__init__(**kwargs)
+        
+        self.input_size = input_size
+        self.output_size = hidden_sizes[-1]
+        self.hidden_sizes = hidden_sizes[:-1]
+        self.dropout = dropout
+
+        # create network
+        self.activation = self._get_activation(name=activation)
+        self._create_model()
+                              
+    def _create_model(self):
+        layers = []
+
+        for ix, hidden_size in enumerate(self.hidden_sizes):
+            if ix == 0:
+                # first layer is input_size -> hidden_size[0]
+                layers.append(nn.Linear(self.input_size, hidden_size))
+            else:
+                # nth layer is previous hidden_size -> current hidden_size
+                layers.append(nn.Linear(self.hidden_sizes[ix - 1], hidden_size)) 
+            
+            layers.append(self.activation)
+            layers.append(nn.Dropout(p=self.dropout))
+        
+        # final layer is hidden_size[-2] -> hidden_size[-1]
+        layers.append(nn.Linear(hidden_size, self.output_size))
+
+        self.model = torch.nn.Sequential(*layers)
+                              
+    def forward(self, data: Dict[str, torch.Tensor]):
+        return self.model(data["x_d"].squeeze())
+
+    def _get_activation(self, name: str) -> nn.Module:
+        if name.lower() == "tanh":
+            activation = nn.Tanh()
+        elif name.lower() == "sigmoid":
+            activation = nn.Sigmoid()
+        elif name.lower() == "linear":
+            activation = nn.Identity()
+        elif name.lower() == "relu":
+            activation = nn.ReLU()
+        else:
+            raise NotImplementedError(f"{name} currently not supported as activation in this class")
+        return activation
+
+    def _reset_parameters(self):
+        """Special initialization of certain model weights."""
+        for layer in self.net:
+            if isinstance(layer, nn.modules.linear.Linear):
+                n_in = layer.weight.shape[1]
+                gain = np.sqrt(3 / n_in)
+                nn.init.uniform_(layer.weight, -gain, gain)
+                nn.init.constant_(layer.bias, val=0)
+
+
 def train_model(
     model: nn.Module,
     train_dataset: CellStateDataset,
