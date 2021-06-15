@@ -1,4 +1,4 @@
-from typing import List, Tuple, Optional, Any, Dict
+from typing import List, Tuple, Optional, Any, Dict, Union
 from collections import defaultdict
 import numpy as np
 import xarray as xr
@@ -8,12 +8,14 @@ from tqdm import tqdm
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sklearn.base import RegressorMixin
 
 import sys
 
 sys.path.append("/home/tommy/neuralhydrology")
 from neuralhydrology.utils.config import Config
 from scripts.cell_state.cell_state_dataset import CellStateDataset
+from scripts.cell_state.cell_state_model import LinearModel
 
 
 def finite_flat(arr: np.ndarray) -> np.ndarray:
@@ -55,10 +57,16 @@ def plot_weights(
     return ax
 
 
-def get_model_weights(model: nn.Linear) -> Tuple[np.ndarray]:
-    parameters = list(model.parameters())
-    w = parameters[0].cpu().detach().numpy()
-    b = parameters[1].cpu().detach().numpy()
+def get_model_weights(model: Union[LinearModel, RegressorMixin]) -> Tuple[np.ndarray]:
+    if isinstance(model, LinearModel):
+        parameters = list(model.parameters())
+        w = parameters[0].cpu().detach().numpy()
+        b = parameters[1].cpu().detach().numpy()
+    elif isinstance(model, RegressorMixin):
+        w = model.coef_
+        b = model.intercept_
+    else:
+        assert False, "Only works with Pytorch and Sklearn models"
     return w, b
 
 

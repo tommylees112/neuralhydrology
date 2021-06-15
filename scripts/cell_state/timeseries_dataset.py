@@ -203,6 +203,79 @@ def get_train_test_dataloader(
     return train_loader, test_loader
 
 
+def get_time_basin_aligned_samples(
+    dataset: TimeSeriesDataset, batch_size: int = 256, num_workers: int = -1
+) -> Tuple[np.ndarray]:
+    # initialise dataloader
+    #  TODO: batch_size=dataset.__len__()
+    dl = DataLoader(dataset, batch_size=batch_size, num_workers=num_workers)
+
+    # initialise arrays
+    all_x = []
+    all_y = []
+    all_times = []
+    all_station_id = []
+
+    # extract arrays from dataset
+    pbar = tqdm(dl, desc="Extracting Data")
+    for data in pbar:
+        all_x.append(data["x_d"].detach().cpu().numpy())
+        all_y.append(data["y"].detach().cpu().numpy())
+
+        all_times.append(data["meta"]["time"].detach().cpu().numpy())
+        all_station_id.append(data["meta"]["spatial_unit"].detach().cpu().numpy())
+
+    # merge the arrays into the correct sizes (n_samples, :)
+    print("Merging and reshaping arrays")
+    #  [sample, dimension]
+    X = np.vstack(all_x).squeeze()
+    #  [sample, 1]
+    y = np.vstack(all_y).squeeze().reshape(-1, 1)
+    times = np.vstack(all_times).squeeze().reshape(-1, 1)
+    station_ids = np.vstack(all_station_id).squeeze().reshape(-1, 1)
+
+    return (X, y, times, station_ids)
+
+
+def get_data_samples(
+    input_data: xr.Dataset,
+    target_data: xr.Dataset,
+    target_variable: str,
+    input_variables: List[str],
+    seq_length: int = 64,
+    basin_dim: str = "station_id",
+    time_dim: str = "time",
+    batch_size: int = 256,
+    num_workers: int = -1,
+    start_date: pd.Timestamp = pd.to_datetime("01-01-1998"),
+    end_date: pd.Timestamp = pd.to_datetime("12-31-2006"),
+) -> Dict[str, np.ndarray]:
+    # 1. create dataset
+    dataset = TimeSeriesDataset(
+        input_data=input_data.sel(time=slice(start_date, end_date)),
+        target_data=target_data.sel(time=slice(start_date, end_date)),
+        target_variable=target_variable,
+        input_variables=input_variables,
+        seq_length=seq_length,
+        basin_dim=basin_dim,
+        time_dim=time_dim,
+        desc="Creating Samples",
+    )
+
+    # 2. extract samples as numpy arrays
+    X, y, times, station_ids = get_time_basin_aligned_samples(
+        dataset, batch_size=batch_size, num_workers=num_workers
+    )
+
+    out = {
+        "X": X,
+        "y": y,
+        "times": times,
+        "station_ids": station_ids,
+    }
+    return out
+
+
 if __name__ == "__main__":
     #  load data
     from pathlib import Path
