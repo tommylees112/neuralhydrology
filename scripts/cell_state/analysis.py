@@ -14,6 +14,24 @@ from neuralhydrology.utils.config import Config
 from scripts.cell_state.cell_state_dataset import CellStateDataset
 
 
+def isfinite_flat(arr: np.ndarray) -> np.ndarray:
+    return arr[np.isfinite(arr)]
+
+
+def histogram_plot(arr: np.ndarray, ax = None, hist_kwargs = {}):
+    import seaborn as sns 
+    import matplotlib.pyplot as plt
+
+    if ax is None:
+        _, ax = plt.subplots(figsize=(12, 4))
+    ax.hist(arr, alpha=0.6, bins=50, density=True, **hist_kwargs)
+
+    ax.axvline(np.median(arr), ls="--", color="k", alpha=0.8)
+    sns.despine()
+    ax.set_xlabel("Metric")
+    return ax
+
+
 def get_model_weights(model: nn.Linear) -> Tuple[np.ndarray]:
     parameters = list(model.parameters())
     w = parameters[0].cpu().detach().numpy()
