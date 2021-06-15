@@ -117,7 +117,7 @@ save_weights_every: 1
 dataset: camels_gb
 
 # Path to data set root
-data_dir: /datadrive/data/data/CAMELS_GB_DATASET
+data_dir: /datadrive/data/CAMELS_GB_DATASET
 
 
 # whether to load the entire data into memory or not
