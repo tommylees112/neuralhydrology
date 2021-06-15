@@ -42,14 +42,15 @@ class LinearModel(nn.Module):
 
 class NonLinearModel(nn.Module):
     def __init__(
-        self, input_size: int, 
-        hidden_sizes: List[int], 
+        self,
+        input_size: int,
+        hidden_sizes: List[int],
         activation: str = "tanh",
-        dropout: float = 0.0, 
-        **kwargs
+        dropout: float = 0.0,
+        **kwargs,
     ):
         super(NonLinearModel, self).__init__(**kwargs)
-        
+
         self.input_size = input_size
         self.output_size = hidden_sizes[-1]
         self.hidden_sizes = hidden_sizes[:-1]
@@ -58,26 +59,26 @@ class NonLinearModel(nn.Module):
         # create network
         self.activation = self._get_activation(name=activation)
         self._create_model()
-                              
+
     def _create_model(self):
         layers = []
 
         for ix, hidden_size in enumerate(self.hidden_sizes):
             if ix == 0:
-                # first layer is input_size -> hidden_size[0]
+                #  first layer is input_size -> hidden_size[0]
                 layers.append(nn.Linear(self.input_size, hidden_size))
             else:
-                # nth layer is previous hidden_size -> current hidden_size
-                layers.append(nn.Linear(self.hidden_sizes[ix - 1], hidden_size)) 
-            
+                #  nth layer is previous hidden_size -> current hidden_size
+                layers.append(nn.Linear(self.hidden_sizes[ix - 1], hidden_size))
+
             layers.append(self.activation)
             layers.append(nn.Dropout(p=self.dropout))
-        
-        # final layer is hidden_size[-2] -> hidden_size[-1]
+
+        #  final layer is hidden_size[-2] -> hidden_size[-1]
         layers.append(nn.Linear(hidden_size, self.output_size))
 
         self.model = torch.nn.Sequential(*layers)
-                              
+
     def forward(self, data: Dict[str, torch.Tensor]):
         return self.model(data["x_d"].squeeze())
 
@@ -91,7 +92,9 @@ class NonLinearModel(nn.Module):
         elif name.lower() == "relu":
             activation = nn.ReLU()
         else:
-            raise NotImplementedError(f"{name} currently not supported as activation in this class")
+            raise NotImplementedError(
+                f"{name} currently not supported as activation in this class"
+            )
         return activation
 
     def _reset_parameters(self):
@@ -113,7 +116,7 @@ def train_model(
     val_split: bool = False,
     desc: str = "Training Epoch",
     batch_size: int = 256,
-    num_workers: int = 4, 
+    num_workers: int = 4,
 ) -> Tuple[Any, List[float], List[float]]:
     #  GET loss function
     loss_fn = torch.nn.MSELoss(reduction="sum")
@@ -135,15 +138,30 @@ def train_model(
             #  create a unique test, val set (random) for each ...
             train_sampler, val_sampler = train_validation_split(train_dataset)
             train_loader = DataLoader(
-                train_dataset, batch_size=batch_size, sampler=train_sampler, num_workers=num_workers
+                train_dataset,
+                batch_size=batch_size,
+                sampler=train_sampler,
+                num_workers=num_workers,
             )
-            val_loader = DataLoader(train_dataset, batch_size=batch_size, sampler=val_sampler, num_workers=num_workers)
+            val_loader = DataLoader(
+                train_dataset,
+                batch_size=batch_size,
+                sampler=val_sampler,
+                num_workers=num_workers,
+            )
         else:
-            train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+            train_loader = DataLoader(
+                train_dataset,
+                batch_size=batch_size,
+                shuffle=True,
+                num_workers=num_workers,
+            )
 
         for data in train_loader:
             y_pred = model(data)
-            y = data["y"][:, ]
+            y = data["y"][
+                :,
+            ]
             loss = loss_fn(y_pred, y)
 
             # train/update the weight
@@ -188,8 +206,8 @@ def train_model_loop(
 ) -> Tuple[List[float], BaseModel, Optional[Tuple[DataLoader]]]:
     #  1. create dataset (input, target)
     dataset = CellStateDataset(
-        input_data=input_data, 
-        target_data=target_data, 
+        input_data=input_data,
+        target_data=target_data,
         device=device,
         start_date=start_date,
         end_date=end_date,
@@ -200,11 +218,15 @@ def train_model_loop(
     if train_test:
         #  build the train, test, validation
         train_dataset, test_dataset = get_train_test_dataset(dataset)
-        test_loader = DataLoader(test_dataset, batch_size=256, shuffle=False, num_workers=num_workers)
+        test_loader = DataLoader(
+            test_dataset, batch_size=256, shuffle=False, num_workers=num_workers
+        )
     else:
         train_dataset = dataset
         test_dataset = dataset
-        test_loader = DataLoader(dataset, batch_size=256, shuffle=False, num_workers=num_workers)
+        test_loader = DataLoader(
+            dataset, batch_size=256, shuffle=False, num_workers=num_workers
+        )
     print("Train-Test-Val Split")
 
     #  3. initialise the model

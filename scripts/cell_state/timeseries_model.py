@@ -40,7 +40,7 @@ def _train_epoch(
         _loss = loss.detach().cpu().numpy()
         _losses.append(_loss)
         pbar.set_postfix_str(_loss)
-    
+
     mean_loss = np.mean(_losses)
     pbar.set_postfix_str(f"{desc} Loss: {mean_loss}")
 
@@ -79,7 +79,9 @@ def train(
     return losses
 
 
-def predict(model: LinearModel, dataloader: DataLoader, device: str = "cpu") -> xr.Dataset:
+def predict(
+    model: LinearModel, dataloader: DataLoader, device: str = "cpu"
+) -> xr.Dataset:
     predictions = defaultdict(list)
     model.eval()
     with torch.no_grad():
@@ -94,7 +96,7 @@ def predict(model: LinearModel, dataloader: DataLoader, device: str = "cpu") -> 
             _times = pd.to_datetime(
                 data["meta"]["time"].numpy().astype("datetime64[ns]")[:, -1]
             )
-            # TODO: convert the times POST-HOC 
+            # TODO: convert the times POST-HOC
             # # conversion of float to time is weird. Reset to start of day
             # time = [t.replace(hour=0, minute=0, second=0, microsecond=0, nanosecond=0) for t in _times]
 
@@ -116,17 +118,23 @@ def get_duplicates_index(arr: np.ndarray) -> np.ndarray:
 
 
 def round_preds_time_to_hour(preds: xr.Dataset) -> xr.Dataset:
-    est_times = np.array([t.round('H') for t in pd.to_datetime(preds.sortby("time").time.values)])
+    est_times = np.array(
+        [t.round("H") for t in pd.to_datetime(preds.sortby("time").time.values)]
+    )
 
-    # check that all expected times are found (rounding errors should be caught here)
+    #  check that all expected times are found (rounding errors should be caught here)
     exp_times = pd.date_range(est_times.min(), est_times.max(), freq="D")
-    est_not_expected = est_times[~ np.isin(est_times, exp_times)]
-    exp_not_estimated = exp_times[~ np.isin(exp_times, est_times)]
-    assert len(est_times) == len(exp_times), f"Expected but not present: {exp_not_estimated}\nUnexpected but present: {est_not_expected} in Estimated"
-    
-    # check that all are unique (no duplicates)
+    est_not_expected = est_times[~np.isin(est_times, exp_times)]
+    exp_not_estimated = exp_times[~np.isin(exp_times, est_times)]
+    assert len(est_times) == len(
+        exp_times
+    ), f"Expected but not present: {exp_not_estimated}\nUnexpected but present: {est_not_expected} in Estimated"
+
+    #  check that all are unique (no duplicates)
     dups = get_duplicates_index(est_times)
-    assert len(np.unique(est_times)) == len(est_times), f"Expected all times to be unique. Duplicates: {est_times[dups]}"
+    assert len(np.unique(est_times)) == len(
+        est_times
+    ), f"Expected all times to be unique. Duplicates: {est_times[dups]}"
 
     preds["time"] = est_times
     return preds
@@ -144,7 +152,7 @@ if __name__ == "__main__":
     input_data = xr.open_dataset(
         data_dir / "SOIL_MOISTURE/interpolated_normalised_camels_gb.nc"
     )
-    
+
     if subset:
         pixels = np.random.choice(target_data.station_id.values, 5)
         target_data = target_data.sel(station_id=pixels)

@@ -1,4 +1,4 @@
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Any, Dict
 from collections import defaultdict
 import numpy as np
 import xarray as xr
@@ -6,6 +6,8 @@ from torch import nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 import sys
 
@@ -18,15 +20,14 @@ def finite_flat(arr: np.ndarray) -> np.ndarray:
     return arr[np.isfinite(arr)]
 
 
-def histogram_plot(arr: np.ndarray, ax = None, hist_kwargs = {}, zero_benchmark: bool = False):
-    import seaborn as sns 
-    import matplotlib.pyplot as plt
-
+def histogram_plot(
+    arr: np.ndarray, ax=None, hist_kwargs={}, zero_benchmark: bool = False
+):
     if ax is None:
         _, ax = plt.subplots(figsize=(12, 4))
     ax.hist(arr, alpha=0.6, bins=50, density=True, **hist_kwargs)
 
-    try: 
+    try:
         color = hist_kwargs["color"]
     except KeyError:
         color = "k"
@@ -37,6 +38,20 @@ def histogram_plot(arr: np.ndarray, ax = None, hist_kwargs = {}, zero_benchmark:
 
     sns.despine()
     ax.set_xlabel("Metric")
+    return ax
+
+
+def plot_weights(
+    ws: np.ndarray,
+    ax: Optional[Any] = None,
+    pcolormesh_kwargs: Dict[str, Any] = {"vmin": 0, "vmax": 0.3},
+):
+    if ax is None:
+        f, ax = plt.subplots(figsize=(12, 2))
+
+    im = ax.pcolormesh(ws, **pcolormesh_kwargs)
+    plt.colorbar(im, orientation="horizontal")
+    plt.tight_layout()
     return ax
 
 
@@ -98,6 +113,7 @@ def calculate_raw_correlations(
 
         start_date = pd.to_datetime(cs_data[time_dim].min().values)
         end_date = pd.to_datetime(cs_data[time_dim].max().values)
+        print(f"Creating CellStateDataset for feature {feature}")
         sm_dataset = CellStateDataset(
             input_data=input_data,
             target_data=target_data,
