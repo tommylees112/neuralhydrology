@@ -14,7 +14,7 @@ from neuralhydrology.utils.config import Config
 from scripts.cell_state.cell_state_dataset import CellStateDataset
 
 
-def isfinite_flat(arr: np.ndarray) -> np.ndarray:
+def finite_flat(arr: np.ndarray) -> np.ndarray:
     return arr[np.isfinite(arr)]
 
 
