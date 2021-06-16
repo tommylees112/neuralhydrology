@@ -117,9 +117,9 @@ def get_duplicates_index(arr: np.ndarray) -> np.ndarray:
     return dups
 
 
-def round_preds_time_to_hour(preds: xr.Dataset) -> xr.Dataset:
+def _round_time_to_hour(time_vals: np.ndarray) -> np.ndarray:
     est_times = np.array(
-        [t.round("H") for t in pd.to_datetime(preds.sortby("time").time.values)]
+        [t.round("H") for t in pd.to_datetime(time_vals)]
     )
 
     #  check that all expected times are found (rounding errors should be caught here)
@@ -135,8 +135,14 @@ def round_preds_time_to_hour(preds: xr.Dataset) -> xr.Dataset:
     assert len(np.unique(est_times)) == len(
         est_times
     ), f"Expected all times to be unique. Duplicates: {est_times[dups]}"
+    return est_times
 
+
+def round_preds_time_to_hour(preds: xr.Dataset) -> xr.Dataset:
+    time_vals = preds.sortby("time").time.values
+    est_times = _round_time_to_hour(time_vals)
     preds["time"] = est_times
+    
     return preds
 
 

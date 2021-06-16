@@ -87,6 +87,21 @@ def get_all_models_weights(models: List[nn.Linear]) -> Tuple[np.ndarray]:
     return ws, bs
 
 
+def _correlations_each_dimension(X: np.ndarray, y: np.ndarray) -> np.ndarray:
+    # [timesteps, n_dimensions]
+    assert X.shape[0] == y.shape[0], "Expect equal number of timesteps"
+    assert X.shape[-1] > 1, "Expect more than 1 dimension (64 state vector) in X"
+
+    correlations = []
+    pbar = tqdm(range(X.shape[-1]), desc="Calculating correlations for each dimension")
+    for i in pbar:
+        corr = np.corrcoef(X[:, i], y, rowvar=False)[0, 1]
+        correlations.append(corr)
+        
+    correlations = np.array(correlations)
+    return correlations
+
+
 def calculate_raw_correlations(
     norm_sm: xr.Dataset,
     cs_data: xr.Dataset,
