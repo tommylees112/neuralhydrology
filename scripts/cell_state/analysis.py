@@ -51,7 +51,7 @@ def plot_weights(
     if ax is None:
         f, ax = plt.subplots(figsize=(12, 2))
 
-    if len(ws.shape()) == 1:
+    if len(ws.shape) == 1:
         # row vector
         ws = ws.reshape(1, -1)
     im = ax.pcolormesh(ws, **kwargs)

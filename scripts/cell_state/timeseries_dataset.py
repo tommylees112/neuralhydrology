@@ -242,7 +242,7 @@ def get_data_samples(
     target_data: xr.Dataset,
     target_variable: str,
     input_variables: List[str],
-    seq_length: int = 64,
+    seq_length: int = 1,
     basin_dim: str = "station_id",
     time_dim: str = "time",
     batch_size: int = 256,
