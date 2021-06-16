@@ -1,3 +1,4 @@
+from datetime import time
 from typing import Optional
 import torch
 from torch.utils.data import DataLoader
@@ -121,6 +122,21 @@ def _round_time_to_hour(time_vals: np.ndarray) -> np.ndarray:
     est_times = np.array(
         [t.round("H") for t in pd.to_datetime(time_vals)]
     )
+    return est_times
+
+
+def _round_and_check_time(time_vals: np.ndarray) -> np.ndarray:
+    """Account for the error in the rounding of a float32 to a datetime64[ns]
+    Never quite works out correctly, but we cannot use datatime64 datatypes 
+    for pytorch dataloaders, and so have to convert to float :/
+
+    Args:
+        time_vals (np.ndarray): [description]
+
+    Returns:
+        np.ndarray: [description]
+    """
+    est_times = _round_time_to_hour(time_vals)
 
     #  check that all expected times are found (rounding errors should be caught here)
     exp_times = pd.date_range(est_times.min(), est_times.max(), freq="D")
@@ -140,9 +156,9 @@ def _round_time_to_hour(time_vals: np.ndarray) -> np.ndarray:
 
 def round_preds_time_to_hour(preds: xr.Dataset) -> xr.Dataset:
     time_vals = preds.sortby("time").time.values
-    est_times = _round_time_to_hour(time_vals)
+    est_times = _round_and_check_time(time_vals)
     preds["time"] = est_times
-    
+
     return preds
 
 
