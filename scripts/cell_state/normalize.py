@@ -72,3 +72,34 @@ def normalize_xarray_cstate(
     norm_c_state = norm_c_state * all_normed_stack
 
     return norm_c_state
+
+
+def normalize_cstate(
+    ds: xr.Dataset,
+    variable_str: str = "c_n",
+    station_dim: str = "station_id",
+    dimension_dim: str = "dimension",
+) -> xr.Dataset:
+    out = []
+    N_dims = len(ds[dimension_dim].values)
+
+    pbar = tqdm(np.arange(len(ds[station_dim].values)), desc="Normalising each station-dimension")
+    for sid in pbar:
+        station_arr = []
+        for did in np.arange(N_dims):
+            s = StandardScaler()
+            
+            normed = s.fit_transform(ds[variable_str][:, sid, did].values.reshape(-1, 1))
+            station_arr.append(normed)
+            
+        # [time, 1, dimension]
+        station_data = np.hstack(station_arr).reshape(-1, 1, N_dims)
+        out.append(station_data)
+
+    # [time, station_id, dimension]
+    normed_data = np.hstack(out)
+    assert normed_data.shape == ds[variable_str].shape
+
+    # convert to xarray
+    ds_norm = xr.ones_like(ds[variable_str]) * normed_data
+    return ds_norm
