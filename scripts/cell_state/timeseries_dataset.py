@@ -204,7 +204,7 @@ def get_train_test_dataloader(
 
 
 def get_time_basin_aligned_samples(
-    dataset: TimeSeriesDataset, batch_size: int = 256, num_workers: int = -1
+    dataset: TimeSeriesDataset, batch_size: int = 256, num_workers: int = 0
 ) -> Tuple[np.ndarray]:
     # initialise dataloader
     #  TODO: batch_size=dataset.__len__()
