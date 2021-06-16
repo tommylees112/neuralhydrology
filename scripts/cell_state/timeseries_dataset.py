@@ -232,7 +232,7 @@ def get_time_basin_aligned_samples(
     #  [sample, 1]
     y = np.vstack(all_y).squeeze().reshape(-1, 1)
     times = np.vstack(all_times).squeeze().reshape(-1, 1)
-    station_ids = np.vstack(all_station_id).squeeze().reshape(-1, 1)
+    station_ids = np.concatenate(all_station_id).squeeze().reshape(-1, 1)
 
     return (X, y, times, station_ids)
 
