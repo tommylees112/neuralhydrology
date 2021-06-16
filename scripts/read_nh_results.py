@@ -394,6 +394,7 @@ def calculate_member_errors(
     time_coord: str = "date",
     obs_var: str = "discharge_spec_obs",
     sim_var: str = "discharge_spec_sim",
+    metrics: Optional[List[str]] = None,
 ) -> xr.Dataset:
     assert "member" in member_ds.coords
 
@@ -407,6 +408,7 @@ def calculate_member_errors(
             time_coord=time_coord,
             obs_var=obs_var,
             sim_var=sim_var,
+            metrics=metrics,
         )
         err = err.assign_coords(member=member).expand_dims("member")
         all_errors.append(err)
