@@ -46,12 +46,15 @@ def histogram_plot(
 def plot_weights(
     ws: np.ndarray,
     ax: Optional[Any] = None,
-    pcolormesh_kwargs: Dict[str, Any] = {"vmin": 0, "vmax": 0.3},
+    kwargs: Dict[str, Any] = {"vmin": 0, "vmax": 0.3},
 ):
     if ax is None:
         f, ax = plt.subplots(figsize=(12, 2))
 
-    im = ax.pcolormesh(ws, **pcolormesh_kwargs)
+    if len(ws.shape()) == 1:
+        # row vector
+        ws = ws.reshape(1, -1)
+    im = ax.pcolormesh(ws, **kwargs)
     plt.colorbar(im, orientation="horizontal")
     plt.tight_layout()
     return ax

@@ -18,10 +18,6 @@ from scripts.cell_state.cell_state_dataset import (
     get_train_test_dataset,
     train_validation_split,
 )
-from scripts.cell_state.analysis import (
-    get_all_models_weights,
-    calculate_raw_correlations,
-)
 from neuralhydrology.modelzoo.head import get_head
 from neuralhydrology.modelzoo.basemodel import BaseModel
 from neuralhydrology.utils.config import Config
@@ -279,7 +275,8 @@ def calculate_predictions(model: BaseModel, loader: DataLoader) -> xr.Dataset:
 
 if __name__ == "__main__":
     from pathlib import Path
-
+    from scripts.cell_state.analysis import get_all_models_weights
+    
     data_dir = Path("/datadrive/data")
     run_dir = data_dir / "runs/complexity_AZURE/hs_064_0306_205514"
 
@@ -334,5 +331,3 @@ if __name__ == "__main__":
 
     #  calculate raw correlations (cell state and values)
     assert False, "No need to reload the CellStateDataset"
-    print("-- Running RAW Correlations --")
-    all_corrs = calculate_raw_correlations(norm_sm=target_data, cs_data=input_data)
