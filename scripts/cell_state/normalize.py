@@ -100,7 +100,8 @@ def normalize_2d_dataset(
     time_ix = int(np.argwhere(np.array(normed_data.shape) == time_dim_n))
 
     # [station_dim, time_dim] 
-    normed_data = normed_data.transpose(station_ix, time_ix)
+    if normed_data.shape != ds[variable_str].shape:
+        normed_data = normed_data.transpose(station_ix, time_ix)
     assert normed_data.shape == ds[variable_str].shape
 
     # convert to xarray
