@@ -166,7 +166,7 @@ def calculate_all_error_metrics(
 
         if metrics is None:
             try:
-                errors = calculate_all_metrics(sim=sim, obs=obs,)
+                errors = calculate_all_metrics(sim=sim, obs=obs, metrics=["all"])
                 all_errors.append(pd.DataFrame({sid: errors}).T)
             except AllNaNError:
                 missing_data.append(sid)

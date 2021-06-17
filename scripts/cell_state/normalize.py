@@ -73,6 +73,40 @@ def normalize_xarray_cstate(
 
     return norm_c_state
 
+def normalize_2d_dataset(    
+    ds: xr.Dataset,
+    variable_str: str = "sm",
+    station_dim: str = "station_id",
+    time_dim: str = "time"
+) -> xr.Dataset:
+    out = []
+    pbar = tqdm(ds[station_dim].values, desc="Normalising each station")
+
+    for sid in pbar:
+        s = StandardScaler()
+        # [1, time]
+        normed = s.fit_transform(ds[variable_str].sel({station_dim: sid}).values.reshape(-1, 1))
+        
+        out.append(normed)
+
+    # [time, station_id]
+    normed_data = np.hstack(out)
+
+    # Transpose IF required
+    station_dim_n = len(ds[station_dim].values)
+    time_dim_n = len(ds[time_dim].values)
+
+    station_ix = int(np.argwhere(np.array(normed_data.shape) == station_dim_n))
+    time_ix = int(np.argwhere(np.array(normed_data.shape) == time_dim_n))
+
+    # [station_dim, time_dim] 
+    normed_data = normed_data.transpose(station_ix, time_ix)
+    assert normed_data.shape == ds[variable_str].shape
+
+    # convert to xarray
+    ds_norm = xr.ones_like(ds[variable_str]) * normed_data
+    return ds_norm
+
 
 def normalize_cstate(
     ds: xr.Dataset,
