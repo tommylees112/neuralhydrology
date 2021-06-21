@@ -13,10 +13,10 @@ from tqdm import tqdm
 
 
 def prepare_rio_data(
-    ds: xr.Dataset, gdf: gpd.GeoDataFrame
+    ds: xr.Dataset, gdf: gpd.GeoDataFrame, lat_dim: str = "lat", lon_dim: str = "lon",
 ) -> Tuple[xr.Dataset, gpd.GeoDataFrame]:
     #  https://gis.stackexchange.com/q/328128/123489
-    ds = ds.rio.set_spatial_dims(x_dim="lon", y_dim="lat")
+    ds = ds.rio.set_spatial_dims(x_dim=lon_dim, y_dim=lat_dim)
     ds = ds.rio.write_crs("epsg:4326")
 
     gdf = gdf.to_crs("epsg:4326")
@@ -30,6 +30,7 @@ def rasterize_all_geoms(
     id_column: str,
     shape_dimension: str = "station_id",
     geometry_column: str = "geometry",
+    lat_dim: str = "lat", lon_dim: str = "lon",
 ) -> xr.Dataset:
     #  TODO: how to ensure prepare_rio_data() has been run? ds.rio.transform() to be correct
     all_shape_masks = []
@@ -43,13 +44,13 @@ def rasterize_all_geoms(
         #  rasterize into a boolean mask (:: np.ndarray)
         shape_mask = rio.features.geometry_mask(
             [shape_row[geometry_column]],
-            out_shape=(len(ds.lat), len(ds.lon)),
+            out_shape=(len(ds[lat_dim]), len(ds[lon_dim])),
             transform=ds.rio.transform(),
             all_touched=True,
             invert=True,
         )
         #  convert to xr.Dataarray (label the lat, lon, shape_dimension, dimensions)
-        shape_mask = xr.DataArray(shape_mask, dims=("lat", "lon"))
+        shape_mask = xr.DataArray(shape_mask, dims=(lat_dim, lon_dim))
         shape_mask = shape_mask.assign_coords({shape_dimension: object_id}).expand_dims(
             shape_dimension
         )
@@ -65,6 +66,7 @@ def rasterize_all_geoms(
 
 def create_timeseries_of_masked_datasets(
     ds: xr.Dataset, masks: xr.Dataset, shape_dimension: str = "station_id",
+    lat_dim: str = "lat", lon_dim: str = "lon",
 ) -> xr.Dataset:
     all_mean_datasets = []
     pbar = tqdm(masks[shape_dimension].values, desc="Chopping ROI: ")
@@ -73,7 +75,7 @@ def create_timeseries_of_masked_datasets(
     for object_id in pbar:
         pbar.set_postfix_str(f"{object_id}")
         mask = masks.sel({shape_dimension: object_id})
-        mean_object = ds.where(mask).mean(dim=["lat", "lon"])
+        mean_object = ds.where(mask).mean(dim=[lat_dim, lon_dim])
         mean_object = mean_object.expand_dims(shape_dimension)
         all_mean_datasets.append(mean_object)
 
@@ -82,7 +84,7 @@ def create_timeseries_of_masked_datasets(
 
 
 def create_camels_basin_timeseries(
-    path_to_sm_data: Path, shp_data_dir: Path
+    path_to_sm_data: Path, shp_data_dir: Path, lat_dim: str = "lat", lon_dim: str = "lon",
 ) -> xr.Dataset:
     # 1. Load in shapefile and dataset
     shp = shp_data_dir / "Catchment_Boundaries/CAMELS_GB_catchment_boundaries.shp"
@@ -90,7 +92,7 @@ def create_camels_basin_timeseries(
     ds = xr.open_dataset(path_to_sm_data)
 
     # 2. Ensure that data properly initialised (e.g. CRS is the same)
-    ds, gdf = prepare_rio_data(ds, gdf)
+    ds, gdf = prepare_rio_data(ds, gdf, lat_dim=lat_dim, lon_dim=lon_dim)
     id_column: str = "ID_STRING"
     shape_dimension: str = "station_id"
 
@@ -101,11 +103,13 @@ def create_camels_basin_timeseries(
         id_column=id_column,
         shape_dimension=shape_dimension,
         geometry_column="geometry",
+        lat_dim=lat_dim, lon_dim=lon_dim,
     )
 
     # 4. Create timeseries of mean values
     out_ds = create_timeseries_of_masked_datasets(
-        ds=ds, masks=masks, shape_dimension=shape_dimension
+        ds=ds, masks=masks, shape_dimension=shape_dimension,
+        lat_dim=lat_dim, lon_dim=lon_dim,
     )
 
     return out_ds
