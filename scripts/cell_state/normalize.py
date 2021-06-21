@@ -73,20 +73,27 @@ def normalize_xarray_cstate(
 
     return norm_c_state
 
+
 def normalize_2d_dataset(    
     ds: xr.Dataset,
     variable_str: str = "sm",
     station_dim: str = "station_id",
-    time_dim: str = "time"
+    time_dim: str = "time",
+    per_basin: bool = True,
 ) -> xr.Dataset:
     out = []
-    pbar = tqdm(ds[station_dim].values, desc="Normalising each station")
+    if per_basin:
+        pbar = tqdm(ds[station_dim].values, desc="Normalising each station")
 
-    for sid in pbar:
-        s = StandardScaler()
-        # [1, time]
-        normed = s.fit_transform(ds[variable_str].sel({station_dim: sid}).values.reshape(-1, 1))
-        
+        for sid in pbar:
+            s = StandardScaler()
+            # [1, time]
+            normed = s.fit_transform(ds[variable_str].sel({station_dim: sid}).values.reshape(-1, 1))
+            
+            out.append(normed)
+    else:  # per variable only
+        # [1, (n_time * n_basin)]
+        normed = (ds[variable_str] - ds[variable_str].mean()) / ds[variable_str].std()
         out.append(normed)
 
     # [time, station_id]
