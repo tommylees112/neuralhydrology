@@ -52,7 +52,7 @@ def plot_weights(
         f, ax = plt.subplots(figsize=(12, 2))
 
     if len(ws.shape) == 1:
-        # row vector
+        #  row vector
         ws = ws.reshape(1, -1)
     im = ax.pcolormesh(ws, **kwargs)
     plt.colorbar(im, orientation="horizontal")
@@ -97,7 +97,7 @@ def _correlations_each_dimension(X: np.ndarray, y: np.ndarray) -> np.ndarray:
     for i in pbar:
         corr = np.corrcoef(X[:, i], y, rowvar=False)[0, 1]
         correlations.append(corr)
-        
+
     correlations = np.array(correlations)
     return correlations
 

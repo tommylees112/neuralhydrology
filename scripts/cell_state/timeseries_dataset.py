@@ -207,16 +207,16 @@ def get_time_basin_aligned_samples(
     dataset: TimeSeriesDataset, batch_size: int = 256, num_workers: int = 0
 ) -> Tuple[np.ndarray]:
     # initialise dataloader
-    #  TODO: batch_size=dataset.__len__()
+    #   TODO: batch_size=dataset.__len__()
     dl = DataLoader(dataset, batch_size=batch_size, num_workers=num_workers)
 
-    # initialise arrays
+    #  initialise arrays
     all_x = []
     all_y = []
     all_times = []
     all_station_id = []
 
-    # extract arrays from dataset
+    #  extract arrays from dataset
     pbar = tqdm(dl, desc="Extracting Data")
     for data in pbar:
         all_x.append(data["x_d"].detach().cpu().numpy())
@@ -225,7 +225,7 @@ def get_time_basin_aligned_samples(
         all_times.append(data["meta"]["time"].detach().cpu().numpy())
         all_station_id.append(data["meta"]["spatial_unit"].detach().cpu().numpy())
 
-    # merge the arrays into the correct sizes (n_samples, :)
+    #  merge the arrays into the correct sizes (n_samples, :)
     print("Merging and reshaping arrays")
     #  [sample, dimension]
     X = np.vstack(all_x).squeeze()

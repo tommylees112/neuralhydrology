@@ -30,7 +30,8 @@ def rasterize_all_geoms(
     id_column: str,
     shape_dimension: str = "station_id",
     geometry_column: str = "geometry",
-    lat_dim: str = "lat", lon_dim: str = "lon",
+    lat_dim: str = "lat",
+    lon_dim: str = "lon",
 ) -> xr.Dataset:
     #  TODO: how to ensure prepare_rio_data() has been run? ds.rio.transform() to be correct
     all_shape_masks = []
@@ -65,8 +66,11 @@ def rasterize_all_geoms(
 
 
 def create_timeseries_of_masked_datasets(
-    ds: xr.Dataset, masks: xr.Dataset, shape_dimension: str = "station_id",
-    lat_dim: str = "lat", lon_dim: str = "lon",
+    ds: xr.Dataset,
+    masks: xr.Dataset,
+    shape_dimension: str = "station_id",
+    lat_dim: str = "lat",
+    lon_dim: str = "lon",
 ) -> xr.Dataset:
     all_mean_datasets = []
     pbar = tqdm(masks[shape_dimension].values, desc="Chopping ROI: ")
@@ -84,7 +88,10 @@ def create_timeseries_of_masked_datasets(
 
 
 def create_camels_basin_timeseries(
-    path_to_sm_data: Path, shp_data_dir: Path, lat_dim: str = "lat", lon_dim: str = "lon",
+    path_to_sm_data: Path,
+    shp_data_dir: Path,
+    lat_dim: str = "lat",
+    lon_dim: str = "lon",
 ) -> xr.Dataset:
     # 1. Load in shapefile and dataset
     shp = shp_data_dir / "Catchment_Boundaries/CAMELS_GB_catchment_boundaries.shp"
@@ -103,13 +110,17 @@ def create_camels_basin_timeseries(
         id_column=id_column,
         shape_dimension=shape_dimension,
         geometry_column="geometry",
-        lat_dim=lat_dim, lon_dim=lon_dim,
+        lat_dim=lat_dim,
+        lon_dim=lon_dim,
     )
 
     # 4. Create timeseries of mean values
     out_ds = create_timeseries_of_masked_datasets(
-        ds=ds, masks=masks, shape_dimension=shape_dimension,
-        lat_dim=lat_dim, lon_dim=lon_dim,
+        ds=ds,
+        masks=masks,
+        shape_dimension=shape_dimension,
+        lat_dim=lat_dim,
+        lon_dim=lon_dim,
     )
 
     return out_ds

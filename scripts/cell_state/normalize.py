@@ -74,7 +74,7 @@ def normalize_xarray_cstate(
     return norm_c_state
 
 
-def normalize_2d_dataset(    
+def normalize_2d_dataset(
     ds: xr.Dataset,
     variable_str: str = "sm",
     station_dim: str = "station_id",
@@ -88,30 +88,32 @@ def normalize_2d_dataset(
         for sid in pbar:
             s = StandardScaler()
             # [1, time]
-            normed = s.fit_transform(ds[variable_str].sel({station_dim: sid}).values.reshape(-1, 1))
-            
+            normed = s.fit_transform(
+                ds[variable_str].sel({station_dim: sid}).values.reshape(-1, 1)
+            )
+
             out.append(normed)
-    else:  # per variable only
-        # [1, (n_time * n_basin)]
+    else:  #  per variable only
+        #  [1, (n_time * n_basin)]
         normed = (ds[variable_str] - ds[variable_str].mean()) / ds[variable_str].std()
         out.append(normed)
 
     # [time, station_id]
     normed_data = np.hstack(out)
 
-    # Transpose IF required
+    #  Transpose IF required
     station_dim_n = len(ds[station_dim].values)
     time_dim_n = len(ds[time_dim].values)
 
     station_ix = int(np.argwhere(np.array(normed_data.shape) == station_dim_n))
     time_ix = int(np.argwhere(np.array(normed_data.shape) == time_dim_n))
 
-    # [station_dim, time_dim] 
+    # [station_dim, time_dim]
     if normed_data.shape != ds[variable_str].shape:
         normed_data = normed_data.transpose(station_ix, time_ix)
     assert normed_data.shape == ds[variable_str].shape
 
-    # convert to xarray
+    #  convert to xarray
     ds_norm = xr.ones_like(ds[variable_str]) * normed_data
     return ds_norm
 
@@ -125,15 +127,20 @@ def normalize_cstate(
     out = []
     N_dims = len(ds[dimension_dim].values)
 
-    pbar = tqdm(np.arange(len(ds[station_dim].values)), desc="Normalising each station-dimension")
+    pbar = tqdm(
+        np.arange(len(ds[station_dim].values)),
+        desc="Normalising each station-dimension",
+    )
     for sid in pbar:
         station_arr = []
         for did in np.arange(N_dims):
             s = StandardScaler()
-            
-            normed = s.fit_transform(ds[variable_str][:, sid, did].values.reshape(-1, 1))
+
+            normed = s.fit_transform(
+                ds[variable_str][:, sid, did].values.reshape(-1, 1)
+            )
             station_arr.append(normed)
-            
+
         # [time, 1, dimension]
         station_data = np.hstack(station_arr).reshape(-1, 1, N_dims)
         out.append(station_data)
@@ -142,6 +149,6 @@ def normalize_cstate(
     normed_data = np.hstack(out)
     assert normed_data.shape == ds[variable_str].shape
 
-    # convert to xarray
+    #  convert to xarray
     ds_norm = xr.ones_like(ds[variable_str]) * normed_data
     return ds_norm

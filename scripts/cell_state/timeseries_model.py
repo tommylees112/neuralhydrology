@@ -119,9 +119,7 @@ def get_duplicates_index(arr: np.ndarray) -> np.ndarray:
 
 
 def _round_time_to_hour(time_vals: np.ndarray) -> np.ndarray:
-    est_times = np.array(
-        [t.round("H") for t in pd.to_datetime(time_vals)]
-    )
+    est_times = np.array([t.round("H") for t in pd.to_datetime(time_vals)])
     return est_times
 
 
