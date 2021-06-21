@@ -29,7 +29,7 @@ class LinearModel(nn.Module):
 
         #  number of weights == number of dimensions in cell state vector (cfg.hidden_size)
         self.D_in = D_in
-        self.model = torch.nn.Sequential(torch.nn.Linear(self.D_in, 1))
+        self.model = torch.nn.Sequential(torch.nn.Linear(self.D_in, 1, bias=True))
         self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, data: Dict[str, torch.Tensor]):
@@ -276,7 +276,7 @@ def calculate_predictions(model: BaseModel, loader: DataLoader) -> xr.Dataset:
 if __name__ == "__main__":
     from pathlib import Path
     from scripts.cell_state.analysis import get_all_models_weights
-    
+
     data_dir = Path("/datadrive/data")
     run_dir = data_dir / "runs/complexity_AZURE/hs_064_0306_205514"
 
