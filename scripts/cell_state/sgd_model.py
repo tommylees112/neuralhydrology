@@ -118,9 +118,9 @@ def create_train_test_datasets(
         target_variable=target_var,
         input_variables=input_variables,
         seq_length=seq_length,
-        basin_dim=seq_length,
-        time_dim=basin_dim,
-        desc=time_dim,
+        basin_dim=basin_dim,
+        time_dim=time_dim,
+        desc="Creating Train Samples",
     )
 
     test_dataset = TimeSeriesDataset(
@@ -129,9 +129,9 @@ def create_train_test_datasets(
         target_variable=target_var,
         input_variables=input_variables,
         seq_length=seq_length,
-        basin_dim=seq_length,
-        time_dim=basin_dim,
-        desc=time_dim,
+        basin_dim=basin_dim,
+        time_dim=time_dim,
+        desc="Creating Test Samples",
     )
 
     return (train_dataset, test_dataset)
