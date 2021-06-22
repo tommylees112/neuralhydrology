@@ -113,8 +113,8 @@ def create_train_test_datasets(
 
     # create pytorch dataloaders 
     train_dataset = TimeSeriesDataset(
-        input_data=target_data,
-        target_data=input_data,
+        input_data=input_data,
+        target_data=target_data,
         target_variable=target_var,
         input_variables=input_variables,
         seq_length=seq_length,
@@ -124,8 +124,8 @@ def create_train_test_datasets(
     )
 
     test_dataset = TimeSeriesDataset(
-        input_data=test_target_data,
-        target_data=test_input_data,
+        input_data=test_input_data,
+        target_data=test_target_data,
         target_variable=target_var,
         input_variables=input_variables,
         seq_length=seq_length,
