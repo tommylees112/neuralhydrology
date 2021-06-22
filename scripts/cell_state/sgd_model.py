@@ -11,7 +11,7 @@ sys.path.append("/home/tommy/neuralhydrology")
 from scripts.read_nh_results import calculate_all_error_metrics
 from scripts.cell_state.timeseries_model import _round_time_to_hour
 from scripts.cell_state.timeseries_dataset import TimeSeriesDataset
-from scripts.cell_state.timeseries_dataset import get_time_basin_aliged_dictionary
+from scripts.cell_state.timeseries_dataset import get_time_basin_aligned_dictionary
 
 def init_sklearn_model(kwargs: Optional[Dict] = None):
     if kwargs is None:
@@ -172,8 +172,8 @@ if __name__ == "__main__":
         time_dim="time",
     )
 
-    train = get_time_basin_aliged_dictionary(train_dataset)
-    test = get_time_basin_aliged_dictionary(test_dataset)
+    train = get_time_basin_aligned_dictionary(train_dataset)
+    test = get_time_basin_aligned_dictionary(test_dataset)
 
     # initalise the model 
     model = init_sklearn_model()
