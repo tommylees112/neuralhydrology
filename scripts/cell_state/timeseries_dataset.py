@@ -237,6 +237,21 @@ def get_time_basin_aligned_samples(
     return (X, y, times, station_ids)
 
 
+def get_time_basin_aliged_dictionary(
+    dataset: TimeSeriesDataset, batch_size: int = 256, num_workers: int = 0
+) -> Dict[str, np.ndarray]:
+    X, y, times, station_ids = get_time_basin_aligned_samples(
+        dataset=dataset,
+        batch_size=batch_size,
+        num_workers=num_workers,
+    )
+    out = dict(
+        X=X, y=y, times=times, station_ids=station_ids
+    )
+    return out 
+
+
+
 def get_data_samples(
     input_data: xr.Dataset,
     target_data: xr.Dataset,
