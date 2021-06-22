@@ -10,7 +10,7 @@ import sys
 sys.path.append("/home/tommy/neuralhydrology")
 from scripts.read_nh_results import calculate_all_error_metrics
 from scripts.cell_state.timeseries_model import _round_time_to_hour
-from scripts.cell_state.timeseries_dataset import TimeSeriesDataset
+from scripts.cell_state.timeseries_dataset import create_train_test_datasets
 from scripts.cell_state.timeseries_dataset import get_time_basin_aligned_dictionary
 
 def init_sklearn_model(kwargs: Optional[Dict] = None):
@@ -23,6 +23,7 @@ def init_sklearn_model(kwargs: Optional[Dict] = None):
         fit_intercept=True, 
         n_iter_no_change=10,
         early_stopping=True,
+        verbose=1
     )
 
     model = SGDRegressor(
@@ -70,71 +71,14 @@ def evaluate(
 
     errors = calculate_all_error_metrics(
         preds,
-        basin_coord="station_id",
-        time_coord="time",
-        obs_var="obs",
-        sim_var="sim",
-        metrics=["NSE", "Pearson-r"],
+        basin_coord=basin_coord,
+        time_coord=time_coord,
+        obs_var=obs_var,
+        sim_var=sim_var,
+        metrics=metrics,
     )
 
     return preds, errors
-
-
-
-def create_train_test_datasets(
-    target_var: str,
-    input_variables: List[str],
-    target_ds: xr.Dataset,
-    input_ds: xr.Dataset,
-    train_start_date: pd.Timestamp = pd.to_datetime("1998-01-01"),
-    train_end_date: pd.Timestamp = pd.to_datetime("2006-09-30"),
-    test_start_date: pd.Timestamp = pd.to_datetime("2006-10-01"),
-    test_end_date: pd.Timestamp =  pd.to_datetime("2009-10-01"),
-    subset_pixels: Optional[List[int]] = None,
-    seq_length: int = 1,
-    basin_dim: str = "station_id",
-    time_dim: str = "time",
-) -> Tuple[Dataset, Dataset]:
-
-    # subset data
-    if subset_pixels is not None:
-        target_data = target_ds.sel(time=slice(train_start_date, train_end_date), station_id=subset_pixels)
-        input_data = input_ds.sel(time=slice(train_start_date, train_end_date), station_id=subset_pixels)
-        
-        test_target_data = target_ds.sel(time=slice(test_start_date, test_end_date), station_id=subset_pixels)
-        test_input_data = input_ds.sel(time=slice(test_start_date, test_end_date), station_id=subset_pixels)
-
-    else:
-        target_data = target_ds.sel(time=slice(train_start_date, train_end_date))
-        input_data = input_ds.sel(time=slice(train_start_date, train_end_date))
-        
-        test_target_data = target_ds.sel(time=slice(test_start_date, test_end_date))
-        test_input_data = input_ds.sel(time=slice(test_start_date, test_end_date))
-
-    # create pytorch dataloaders 
-    train_dataset = TimeSeriesDataset(
-        input_data=input_data,
-        target_data=target_data,
-        target_variable=target_var,
-        input_variables=input_variables,
-        seq_length=seq_length,
-        basin_dim=basin_dim,
-        time_dim=time_dim,
-        desc="Creating Train Samples",
-    )
-
-    test_dataset = TimeSeriesDataset(
-        input_data=test_input_data,
-        target_data=test_target_data,
-        target_variable=target_var,
-        input_variables=input_variables,
-        seq_length=seq_length,
-        basin_dim=basin_dim,
-        time_dim=time_dim,
-        desc="Creating Test Samples",
-    )
-
-    return (train_dataset, test_dataset)
 
 
 if __name__ == "__main__":
