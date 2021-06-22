@@ -312,7 +312,12 @@ def shuffle_basin_dim(
     target_data: xr.Dataset,
     basin_dim: str = "station_id"
 ) -> Tuple[Dict[str, int], xr.Dataset, xr.Dataset]:
-    """Shuffle the basin_dim so that you break the link between the spatial mappings
+    """Create a mapping (dict) that randomly shuffles the basin dim and returns a copy of 
+    the two datasets with matching dimensions which can then be shuffled using:
+
+    input_data[basin_dim] = [mapping[sid] for sid in input_data[basin_dim].values]
+        `OR`
+    target_data[basin_dim] = [mapping[sid] for sid in target_data[basin_dim].values]
 
     Args:
         input_data (xr.Dataset): [description]
@@ -322,20 +327,21 @@ def shuffle_basin_dim(
     Returns:
         Tuple[Dict[str, int], xr.Dataset, xr.Dataset]: [description]
     """
-    shuffled_input = input_data.copy()
-    shuffled_target = target_data.copy()
+    input_copy = input_data.copy()
+    target_copy = target_data.copy()
 
-    shuffled_target, shuffled_input = get_matching_station_ids(shuffled_target, shuffled_input, basin_dim=basin_dim)
+    target_copy, input_copy = get_matching_station_ids(target_copy, input_copy, basin_dim=basin_dim)
 
+    # TODO: how can we shuffle to increase the spatial distances between the points?
     mapping = dict(zip(
-        shuffled_target[basin_dim].values,
-        shuffle(shuffled_target[basin_dim].values),
+        target_copy[basin_dim].values,
+        shuffle(target_copy[basin_dim].values),
     ))
 
-    shuffled_input[basin_dim] = [mapping[sid] for sid in shuffled_input[basin_dim].values]
-    shuffled_target[basin_dim] = [mapping[sid] for sid in shuffled_target[basin_dim].values]
+    input_copy[basin_dim] = [mapping[sid] for sid in input_copy[basin_dim].values]
+    target_copy[basin_dim] = [mapping[sid] for sid in target_copy[basin_dim].values]
     
-    return mapping, shuffled_input, shuffled_target
+    return mapping, input_copy, target_copy
 
 
 def _get_train_test_target_input_datasets(

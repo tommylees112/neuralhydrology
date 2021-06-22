@@ -21,7 +21,7 @@ def init_sklearn_model(kwargs: Optional[Dict] = None):
         alpha=0.01,
         l1_ratio=0.15,            # default
         fit_intercept=True, 
-        n_iter_no_change=10,
+        n_iter_no_change=3,
         early_stopping=True,
         verbose=1
     )
