@@ -146,7 +146,7 @@ if __name__ == "__main__":
     test_end_date =  pd.to_datetime("2009-10-01")
 
     input_variables = [f"dim{i}" for i in np.arange(64)]
-    target_var = "discharge_spec"
+    target_var = "sm"
     subset_pixels = None
 
     # get target data `era5_sm`
