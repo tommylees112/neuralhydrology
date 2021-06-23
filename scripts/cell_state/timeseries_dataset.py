@@ -242,15 +242,10 @@ def get_time_basin_aligned_dictionary(
     dataset: TimeSeriesDataset, batch_size: int = 256, num_workers: int = 0
 ) -> Dict[str, np.ndarray]:
     X, y, times, station_ids = get_time_basin_aligned_samples(
-        dataset=dataset,
-        batch_size=batch_size,
-        num_workers=num_workers,
+        dataset=dataset, batch_size=batch_size, num_workers=num_workers,
     )
-    out = dict(
-        X=X, y=y, times=times, station_ids=station_ids
-    )
-    return out 
-
+    out = dict(X=X, y=y, times=times, station_ids=station_ids)
+    return out
 
 
 def get_data_samples(
@@ -292,15 +287,15 @@ def get_data_samples(
     return out
 
 
-def get_matching_station_ids(ds1: xr.Dataset, ds2: xr.Dataset, basin_dim: str = "station_id") -> Tuple[xr.Dataset, xr.Dataset]:
+def get_matching_station_ids(
+    ds1: xr.Dataset, ds2: xr.Dataset, basin_dim: str = "station_id"
+) -> Tuple[xr.Dataset, xr.Dataset]:
     ds1[basin_dim] = ds1[basin_dim].astype(int)
     ds2[basin_dim] = ds2[basin_dim].astype(int)
 
     # matching_stations
-    ds1_sids, ds2_sids = get_matching_dim(
-        ds1, ds2, basin_dim
-    )
-    # select matching stations only
+    ds1_sids, ds2_sids = get_matching_dim(ds1, ds2, basin_dim)
+    #  select matching stations only
     ds1 = ds1.sel(dict(basin_dim=ds1_sids))
     ds2 = ds2.sel(dict(basin_dim=ds2_sids))
 
@@ -308,9 +303,7 @@ def get_matching_station_ids(ds1: xr.Dataset, ds2: xr.Dataset, basin_dim: str = 
 
 
 def shuffle_basin_dim(
-    input_data: xr.Dataset,
-    target_data: xr.Dataset,
-    basin_dim: str = "station_id"
+    input_data: xr.Dataset, target_data: xr.Dataset, basin_dim: str = "station_id"
 ) -> Tuple[Dict[str, int], xr.Dataset, xr.Dataset]:
     """Create a mapping (dict) that randomly shuffles the basin dim and returns a copy of 
     the two datasets with matching dimensions which can then be shuffled using:
@@ -330,17 +323,23 @@ def shuffle_basin_dim(
     input_copy = input_data.copy()
     target_copy = target_data.copy()
 
-    target_copy, input_copy = get_matching_station_ids(target_copy, input_copy, basin_dim=basin_dim)
+    target_copy, input_copy = get_matching_station_ids(
+        target_copy, input_copy, basin_dim=basin_dim
+    )
 
-    # TODO: how can we shuffle to increase the spatial distances between the points?
-    mapping = dict(zip(
-        target_copy[basin_dim].values,
-        shuffle(target_copy[basin_dim].values),
-    ))
+    #  TODO: how can we shuffle to increase the spatial distances between the points?
+    mapping = dict(
+        zip(target_copy[basin_dim].values, shuffle(target_copy[basin_dim].values),)
+    )
+    inv_mapping = {
+        #  shuffled key: original value
+        v: k
+        for (k, v) in mapping.items()
+    }
 
-    input_copy[basin_dim] = [mapping[sid] for sid in input_copy[basin_dim].values]
-    target_copy[basin_dim] = [mapping[sid] for sid in target_copy[basin_dim].values]
-    
+    # input_copy[basin_dim] = [mapping[sid] for sid in input_copy[basin_dim].values]
+    # target_copy[basin_dim] = [mapping[sid] for sid in target_copy[basin_dim].values]
+
     return mapping, input_copy, target_copy
 
 
@@ -350,25 +349,33 @@ def _get_train_test_target_input_datasets(
     train_start_date: pd.Timestamp = pd.to_datetime("1998-01-01"),
     train_end_date: pd.Timestamp = pd.to_datetime("2006-09-30"),
     test_start_date: pd.Timestamp = pd.to_datetime("2006-10-01"),
-    test_end_date: pd.Timestamp =  pd.to_datetime("2009-10-01"),
+    test_end_date: pd.Timestamp = pd.to_datetime("2009-10-01"),
     subset_pixels: Optional[List[int]] = None,
 ) -> Tuple[xr.Dataset]:
-    # subset data
+    #  subset data
     if subset_pixels is not None:
-        target_data = target_ds.sel(time=slice(train_start_date, train_end_date), station_id=subset_pixels)
-        input_data = input_ds.sel(time=slice(train_start_date, train_end_date), station_id=subset_pixels)
-        
-        test_target_data = target_ds.sel(time=slice(test_start_date, test_end_date), station_id=subset_pixels)
-        test_input_data = input_ds.sel(time=slice(test_start_date, test_end_date), station_id=subset_pixels)
+        target_data = target_ds.sel(
+            time=slice(train_start_date, train_end_date), station_id=subset_pixels
+        )
+        input_data = input_ds.sel(
+            time=slice(train_start_date, train_end_date), station_id=subset_pixels
+        )
+
+        test_target_data = target_ds.sel(
+            time=slice(test_start_date, test_end_date), station_id=subset_pixels
+        )
+        test_input_data = input_ds.sel(
+            time=slice(test_start_date, test_end_date), station_id=subset_pixels
+        )
 
     else:
         target_data = target_ds.sel(time=slice(train_start_date, train_end_date))
         input_data = input_ds.sel(time=slice(train_start_date, train_end_date))
-        
+
         test_target_data = target_ds.sel(time=slice(test_start_date, test_end_date))
         test_input_data = input_ds.sel(time=slice(test_start_date, test_end_date))
-    
-    return (target_data, input_data, test_target_data, test_input_data) 
+
+    return (target_data, input_data, test_target_data, test_input_data)
 
 
 def create_train_test_datasets(
@@ -379,24 +386,29 @@ def create_train_test_datasets(
     train_start_date: pd.Timestamp = pd.to_datetime("1998-01-01"),
     train_end_date: pd.Timestamp = pd.to_datetime("2006-09-30"),
     test_start_date: pd.Timestamp = pd.to_datetime("2006-10-01"),
-    test_end_date: pd.Timestamp =  pd.to_datetime("2009-10-01"),
+    test_end_date: pd.Timestamp = pd.to_datetime("2009-10-01"),
     subset_pixels: Optional[List[int]] = None,
     seq_length: int = 1,
     basin_dim: str = "station_id",
     time_dim: str = "time",
 ) -> Tuple[Dataset, Dataset]:
 
-    target_data, input_data, test_target_data, test_input_data = _get_train_test_target_input_datasets(
+    (
+        target_data,
+        input_data,
+        test_target_data,
+        test_input_data,
+    ) = _get_train_test_target_input_datasets(
         target_ds=target_ds,
         input_ds=input_ds,
         train_start_date=train_start_date,
         train_end_date=train_end_date,
         test_start_date=test_start_date,
         test_end_date=test_end_date,
-        subset_pixels=subset_pixels, 
+        subset_pixels=subset_pixels,
     )
 
-    # create pytorch dataloaders 
+    # create pytorch dataloaders
     train_dataset = TimeSeriesDataset(
         input_data=input_data,
         target_data=target_data,

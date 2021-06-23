@@ -47,6 +47,7 @@ def plot_weights(
     ws: np.ndarray,
     ax: Optional[Any] = None,
     kwargs: Dict[str, Any] = {"vmin": 0, "vmax": 0.3},
+    cbar: bool = True,
 ):
     if ax is None:
         f, ax = plt.subplots(figsize=(12, 2))
@@ -55,8 +56,9 @@ def plot_weights(
         #  row vector
         ws = ws.reshape(1, -1)
     im = ax.pcolormesh(ws, **kwargs)
-    plt.colorbar(im, orientation="horizontal")
-    plt.tight_layout()
+    if cbar:
+        plt.colorbar(im, orientation="horizontal")
+        plt.tight_layout()
     return ax
 
 
