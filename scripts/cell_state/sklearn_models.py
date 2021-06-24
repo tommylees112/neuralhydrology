@@ -29,7 +29,7 @@ def init_linear_model(kwargs: Dict = {}):
     )
     
     if kwargs != {}:
-        for new_key, new_val in kwargs:
+        for new_key, new_val in kwargs.items():
             _kwargs.update({new_key: new_val})
 
     model = SGDRegressor(**_kwargs)
@@ -51,7 +51,7 @@ def init_nonlinear_model(
         verbose=1,
     )
     if kwargs != {}:
-        for new_key, new_val in kwargs:
+        for new_key, new_val in kwargs.items():
             _kwargs.update({new_key: new_val})
 
 
