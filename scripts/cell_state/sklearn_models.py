@@ -123,7 +123,7 @@ def fit_and_predict(train: Dict[str, np.ndarray], test: Dict[str, np.ndarray], r
     np.random.seed(random_seed)
     
     # intiialise and fit the model
-    model = init_linear_model(kwargs={"verbose": 0})
+    model = init_linear_model()
     model.fit(train["X"], train["y"].ravel())
 
     # make predictions from the fitted model 
