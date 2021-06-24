@@ -1,4 +1,4 @@
-from typing import Dict, Optional, List, Tuple
+from typing import Dict, Optional, List, Tuple, Any
 from pathlib import Path
 import numpy as np
 import xarray as xr
@@ -17,18 +17,22 @@ from scripts.cell_state.timeseries_dataset import get_time_basin_aligned_diction
 
 
 def init_linear_model(kwargs: Dict = {}):
-    if kwargs == {}:
-        kwargs = dict(
-            loss="huber",
-            penalty="elasticnet",
-            alpha=0.01,
-            l1_ratio=0.15,  # default
-            fit_intercept=True,
-            n_iter_no_change=3,
-            early_stopping=True,
-        )
+    _kwargs = dict(
+        loss="huber",
+        penalty="elasticnet",
+        alpha=0.01,
+        l1_ratio=0.15,  # default
+        fit_intercept=True,
+        n_iter_no_change=3,
+        early_stopping=True,
+        verbose=1,
+    )
+    
+    if kwargs != {}:
+        for new_key, new_val in kwargs:
+            _kwargs.update({new_key: new_val})
 
-    model = SGDRegressor(verbose=1, **kwargs,)
+    model = SGDRegressor(**_kwargs)
 
     return model
 
@@ -36,19 +40,23 @@ def init_linear_model(kwargs: Dict = {}):
 def init_nonlinear_model(
     hidden_sizes: List[int], activation: str = "relu", kwargs: Dict = {}
 ):
-    if kwargs == {}:
-        dict(
-            alpha=0.15,
-            solver="adam",
-            learning_rate="invscaling",
-            random_state=100,
-            max_iter=30,
-            early_stopping=True,
-            n_iter_no_change=3,
-        )
+    _kwargs = dict(
+        alpha=0.15,
+        solver="adam",
+        learning_rate="invscaling",
+        random_state=100,
+        max_iter=30,
+        early_stopping=True,
+        n_iter_no_change=3,
+        verbose=1,
+    )
+    if kwargs != {}:
+        for new_key, new_val in kwargs:
+            _kwargs.update({new_key: new_val})
+
 
     model = MLPRegressor(
-        hidden_layer_sizes=hidden_sizes, activation=activation, verbose=1, **kwargs
+        hidden_layer_sizes=hidden_sizes, activation=activation, **_kwargs
     )
     return model
 
@@ -109,6 +117,19 @@ def evaluate(
     )
 
     return preds, errors
+
+
+def fit_and_predict(train: Dict[str, np.ndarray], test: Dict[str, np.ndarray], random_seed: int = 100) -> Tuple[Any, xr.Dataset, xr.Dataset]:
+    np.random.seed(random_seed)
+    
+    # intiialise and fit the model
+    model = init_linear_model(kwargs={"verbose": 0})
+    model.fit(train["X"], train["y"].ravel())
+
+    # make predictions from the fitted model 
+    preds, errors = evaluate(model, test)
+    
+    return model, preds, errors
 
 
 if __name__ == "__main__":
