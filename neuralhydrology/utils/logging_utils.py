@@ -1,5 +1,4 @@
 import logging
-import os
 import sys
 
 LOGGER = logging.getLogger(__name__)
@@ -13,12 +12,7 @@ def setup_logging(log_file: str):
     log_file : str
         Name of the file that will be logged to.
     """
-    try:
-        file_handler = logging.FileHandler(filename=log_file)
-    except PermissionError:
-        os.chmod(log_file, 777)
-        file_handler = logging.FileHandler(filename=log_file)
-
+    file_handler = logging.FileHandler(filename=log_file)
     stdout_handler = logging.StreamHandler(sys.stdout)
 
     logging.basicConfig(handlers=[file_handler, stdout_handler], level=logging.INFO, format="%(asctime)s: %(message)s")
