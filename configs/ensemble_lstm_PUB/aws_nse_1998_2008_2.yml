@@ -5,7 +5,7 @@
 experiment_name: lstm_ensemble2_PUB
 
 # place to store run directory (if empty runs are stored in code_dir/runs/)
-run_dir: /datadrive/data/data/runs/ensemble_lstm_PUB
+run_dir: /datadrive/data/runs/ensemble_lstm_PUB
 
 # files to specify training, validation and test basins (relative to code root or absolute path)
 train_basin_file: /home/tommy/neuralhydrology/data/camels_gb_TRAIN.txt
@@ -117,7 +117,7 @@ save_weights_every: 1
 dataset: camels_gb
 
 # Path to data set root
-data_dir: /datadrive/data/data/CAMELS_GB_DATASET
+data_dir: /datadrive/data/CAMELS_GB_DATASET
 
 # Path to pre-processed hdf5 file here (and corresponding scaler pickle file). Leave empty to create
 # new hdf5 file
