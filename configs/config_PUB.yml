@@ -121,8 +121,6 @@ data_dir: /datadrive/data/data/CAMELS_GB_DATASET
 
 # Path to pre-processed hdf5 file here (and corresponding scaler pickle file). Leave empty to create
 # new hdf5 file
-h5_file:
-scaler_file:
 
 # whether to load the entire data into memory or not
 cache_validation_data: True
@@ -169,7 +167,7 @@ camels_attributes:
 
 
 # clip negative predictions to zero for all variables listed below. Should be a list, even for single variables.
-clip_target_to_zero:
+clip_targets_to_zero:
 - discharge_spec
 
 # zero_center_target: True -- DEPRECEATED
