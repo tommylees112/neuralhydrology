@@ -63,14 +63,16 @@ def calculate_correlation_with_static_features(metric_values: pd.Series, static_
     rank_correlations = pd.DataFrame(out)
     return rank_correlations
 
+
 def calculate_correlations(
     static_df: pd.DataFrame, 
     catchment_averaged_var: pd.Series,
     model: str = "LSTM",
+    method: str = "spearman",
 ):
     ## Calculate correlations 
     # for variance_metric
-    corr_df = calculate_correlation_with_static_features(catchment_averaged_var, static_df, method="spearman")
+    corr_df = calculate_correlation_with_static_features(catchment_averaged_var, static_df, method=method)
     corr_df["model"] = model
     return corr_df
 
@@ -78,12 +80,13 @@ def calculate_correlations(
 def calculate_multi_model_correlations(
     all_catchment_vars: List[pd.DataFrame],
     models: List[str] = ["LSTM", "EALSTM", "TOPMODEL", "SACRAMENTO", "ARNOVIC", "PRMS"],
+    method: str = "spearman",
 ):
     assert len(models) == len(all_catchment_vars)
-    corr_df = calculate_correlations(static_df, all_catchment_vars[0])
+    corr_df = calculate_correlations(static_df, all_catchment_vars[0], method=method)
     for ix, model in enumerate(models):
         if ix != 0:
-            _corr_df = calculate_correlations(static_df, all_catchment_vars[ix])
+            _corr_df = calculate_correlations(static_df, all_catchment_vars[ix], method=method)
             _corr_df["model"] = model
             corr_df = pd.concat([corr_df, _corr_df])
 
