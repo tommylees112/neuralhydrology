@@ -147,3 +147,4 @@ if __name__ == "__main__":
 
     # set dataframe ready for plotting
     corr_df = corr_df_ready_for_plotting(corr_df)
+    assert False
