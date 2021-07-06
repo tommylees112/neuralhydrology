@@ -331,6 +331,7 @@ class BaseDataset(Dataset):
 
             # create one large dataset that has two coordinates: datetime and basin
             xr = xarray.concat(data_list, dim="basin")
+            assert False
 
             if self.is_train and self.cfg.save_train_data:
                 self._save_xarray_dataset(xr)
