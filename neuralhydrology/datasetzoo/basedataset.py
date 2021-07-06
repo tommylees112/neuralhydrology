@@ -116,7 +116,6 @@ class BaseDataset(Dataset):
         # if additional features files are passed in the config, load those files
         if (not additional_features) and cfg.additional_feature_files:
             self._load_additional_features()
-            assert False
 
         if cfg.use_basin_id_encoding:
             if self.is_train:
@@ -532,7 +531,6 @@ class BaseDataset(Dataset):
         self._load_combined_attributes()
 
         xr = self._load_or_create_xarray_dataset()
-        # assert False
 
         if self.cfg.loss.lower() in ['nse', 'weightednse']:
             # get the std of the discharge for each basin, which is needed for the (weighted) NSE loss.

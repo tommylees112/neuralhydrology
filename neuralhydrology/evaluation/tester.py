@@ -112,6 +112,7 @@ class BaseTester(object):
         for file in self.cfg.additional_feature_files:
             with open(file, "rb") as fp:
                 self.additional_features.append(pickle.load(fp))
+        assert False
 
     def _get_weight_file(self, epoch: int):
         """Get file path to weight file"""
