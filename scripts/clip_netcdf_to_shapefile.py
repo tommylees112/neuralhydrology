@@ -2,7 +2,7 @@
 Mask xarray dataset using a shapefile [closed]
 https://stackoverflow.com/a/64587946/9940782
 """
-from typing import Tuple
+from typing import Tuple, Union
 import geopandas as gpd
 import xarray as xr
 import rasterio as rio
@@ -88,7 +88,7 @@ def create_timeseries_of_masked_datasets(
 
 
 def create_camels_basin_timeseries(
-    path_to_sm_data: Path,
+    data_obj: Union[Path, xr.Dataset],
     shp_data_dir: Path,
     lat_dim: str = "lat",
     lon_dim: str = "lon",
@@ -96,7 +96,12 @@ def create_camels_basin_timeseries(
     # 1. Load in shapefile and dataset
     shp = shp_data_dir / "Catchment_Boundaries/CAMELS_GB_catchment_boundaries.shp"
     gdf = gpd.read_file(shp)
-    ds = xr.open_dataset(path_to_sm_data)
+    if isinstance(data_obj, Path):
+        ds = xr.open_dataset(data_obj)
+    elif isinstance(data_obj, xr.Dataset):
+        ds = data_obj
+    else:
+        assert False, "Expect Path or xr.Dataset object"
 
     # 2. Ensure that data properly initialised (e.g. CRS is the same)
     ds, gdf = prepare_rio_data(ds, gdf, lat_dim=lat_dim, lon_dim=lon_dim)
@@ -132,7 +137,7 @@ if __name__ == "__main__":
     path_to_sm_data = data_dir / "esa_cci_sm_gb.nc"
 
     out_ds = create_camels_basin_timeseries(
-        path_to_sm_data=path_to_sm_data, shp_data_dir=shp_data_dir
+        data_obj=path_to_sm_data, shp_data_dir=shp_data_dir
     )
 
     # save the catchment averaged timeseries of soil moisture
