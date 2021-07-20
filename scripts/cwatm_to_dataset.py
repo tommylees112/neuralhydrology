@@ -1,23 +1,30 @@
-import xarray as xr 
+import xarray as xr
 import numpy as np
 import pandas as pd
-from pathlib import Path 
-import rioxarray 
+from pathlib import Path
+import rioxarray
 from tqdm import tqdm
-from scripts.clip_netcdf_to_shapefile import create_camels_basin_timeseries
+from scripts.clip_netcdf_to_shapefile import (
+    prepare_rio_data,
+    rasterize_all_geoms,
+    create_timeseries_of_masked_datasets,
+)
+import geopandas as gpd
 
 
-def initalise_rio_geospatial(ds: xr.Dataset, crs: str = "epsg:3035", lon_dim: str = "x", lat_dim: str = "y"):
+def initalise_rio_geospatial(
+    ds: xr.Dataset, crs: str = "epsg:3035", lon_dim: str = "x", lat_dim: str = "y"
+):
     ds = ds.rio.set_spatial_dims(x_dim=lon_dim, y_dim=lat_dim)
     ds = ds.rio.write_crs(crs)
-    return ds 
+    return ds
 
 
 def reproject_ds(ds: xr.Dataset, reproject_crs: str = "EPSG:4326") -> xr.Dataset:
     try:
         ds = ds.rio.reproject(reproject_crs)
     except MemoryError:
-        # do reprojection time by time
+        #  do reprojection time by time
         all_times = []
         for time in tqdm(ds.time.values, desc="Reproject Time"):
             reproject_ds = ds.sel(time=time).rio.reproject(reproject_crs)
@@ -31,26 +38,26 @@ def reproject_ds(ds: xr.Dataset, reproject_crs: str = "EPSG:4326") -> xr.Dataset
 
 def convert_xy_to_station_id(ds: xr.Dataset, gauge_latlons: pd.DataFrame) -> xr.Dataset:
     assert all(np.isin(["gauge_lat", "gauge_lon"], gauge_latlons.columns))
-    
+
     all_sids = []
-    # extract 
+    # extract
     for sid, row in gauge_latlons.iterrows():
         lat, lon = row["gauge_lat"], row["gauge_lon"]
-        # get the data for the nearest point on the stream
+        #  get the data for the nearest point on the stream
         data = ds.sel(x=lon, y=lat, method="nearest")
-        # assign station_id as a coordinate
+        #  assign station_id as a coordinate
         data = data.assign_coords({"station_id": ([sid])})
         all_sids.append(data)
-    
-    # join all station_id making station_id a dimension -> (station_id, )
+
+    #  join all station_id making station_id a dimension -> (station_id, )
     _ds = xr.concat(all_sids, dim="station_id")
-    
+
     # expand the time dimension -> (time, station_id)
     if ds.time.size == 1:
         _ds = _ds.expand_dims("time")
 
     return _ds
-    
+
 
 def create_station_id_data_from_cwatm_output(
     cwatm_ds: xr.Dataset, gauge_latlons: pd.DataFrame
@@ -59,14 +66,16 @@ def create_station_id_data_from_cwatm_output(
     pbar = tqdm(cwatm_ds["time"].values, desc="Reproject and Select Station ID")
     for time in pbar:
         pbar.set_postfix_str(time)
-        # reproject a single time (memory issues)
-        single_time_ds = reproject_ds(cwatm_ds.sel(time=time), reproject_crs="EPSG:4326")
+        #  reproject a single time (memory issues)
+        single_time_ds = reproject_ds(
+            cwatm_ds.sel(time=time), reproject_crs="EPSG:4326"
+        )
         _ds = convert_xy_to_station_id(single_time_ds, gauge_latlons)
         all_times.append(_ds)
 
     print("Concatenating all timesteps")
     sid_ds = xr.concat(all_times, dim="time")
-    return sid_ds 
+    return sid_ds
 
 
 if __name__ == "__main__":
@@ -74,39 +83,88 @@ if __name__ == "__main__":
     cwat_dir = data_dir / "CWATM"
     input_files = {
         "Precipitation": cwat_dir / "Precipitation_daily.nc",
-        "Tavg": cwat_dir / "Tavg_daily.nc", 
+        "Tavg": cwat_dir / "Tavg_daily.nc",
     }
     target_file = cwat_dir / "discharge_daily.nc"
-    assert all([f.exists() for f in input_files + [target_file]])
-    
+    assert all([f.exists() for f in list(input_files.values()) + [target_file]])
+
     # target data (DISCHARGE AT A POUR POINT)
     target = xr.open_dataset(target_file)
     target = initalise_rio_geospatial(target[["discharge"]], crs="epsg:3035")
     static = xr.open_dataset(data_dir / "static.nc")
     gauge_latlons = static[["gauge_lat", "gauge_lon"]].to_dataframe()
-    
-    # 1. reproject gridded cwatm to latlon
-    # 2. get gauge lat lon
+
+    #  1. reproject gridded cwatm to latlon
+    #  2. get gauge lat lon
     # 3. select gauge from gridded cwatm
-    sid_ds = create_station_id_data_from_cwatm_output(cwatm_ds=target, gauge_latlons=gauge_latlons)
+    sid_ds = create_station_id_data_from_cwatm_output(
+        cwatm_ds=target, gauge_latlons=gauge_latlons
+    )
     sid_ds.to_netcdf(data_dir / "cwatm_discharge.nc")
 
-    # input data
+    #  input data (mean over catchment area - "lumped")
     # 1. reproject gridded cwatm to latlon
-    # 2. get catchment shapefiles
+    #  2. get catchment shapefiles
     # 3. calculate shapefile means over catchment area
-    shp_data_dir = data_dir / "CAMELS_GB_DATASET"
-
-    for var, filepath in input_files.items():
+    # for var, filepath in input_files.items():
+    for var, filepath in [("Tavg", cwat_dir / "Tavg_daily.nc")]:
+    # for var, filepath in [("Precipitation", cwat_dir / "Precipitation_daily.nc")]:
         input_ds = xr.open_dataset(filepath).drop("lambert_azimuthal_equal_area")
-        input_ds = initalise_rio_geospatial(input_ds[var], crs="epsg:3035")
+        input_ds = initalise_rio_geospatial(input_ds[[var]], crs="epsg:3035")
 
+        # get initial time for creating the spatial masks
         time = input_ds["time"].values[0]
-        single_time_ds = reproject_ds(input_ds.sel(time=time), reproject_crs="EPSG:4326")
-        out_ds = create_camels_basin_timeseries(
-            sm_data=input_data, shp_data_dir=shp_data_dir
+        single_time_ds = reproject_ds(
+            input_ds.sel(time=time), reproject_crs="EPSG:4326"
         )
 
-        break
+        # 1. Create station_id xarray shape masks
+        shp_data_dir = data_dir / "CAMELS_GB_DATASET"
+        single_time_ds = reproject_ds(input_ds.isel(time=0), reproject_crs="EPSG:4326")
+        id_column: str = "ID_STRING"
+        shape_dimension: str = "station_id"
+        lat_dim = "y"
+        lon_dim = "x"
+        shp = shp_data_dir / "Catchment_Boundaries/CAMELS_GB_catchment_boundaries.shp"
 
-    
+        gdf = gpd.read_file(shp)
+        #  ensure that data properly initialised (e.g. CRS is the same)
+        single_time_ds, gdf = prepare_rio_data(
+            single_time_ds, gdf, lat_dim=lat_dim, lon_dim=lon_dim
+        )
+        #  rasterize the shapefile
+        masks = rasterize_all_geoms(
+            ds=single_time_ds,
+            gdf=gdf,
+            id_column=id_column,
+            shape_dimension=shape_dimension,
+            geometry_column="geometry",
+            lat_dim=lat_dim,
+            lon_dim=lon_dim,
+        )
+
+        pbar = tqdm(input_ds["time"].values, desc="Create Mean of Masked Area")
+        all_times = []
+        for time in pbar:
+            pbar.set_postfix_str(time)
+            # 2. Create timeseries of mean values (chop roi)
+            single_time_ds = reproject_ds(
+                input_ds.sel(time=time), reproject_crs="EPSG:4326"
+            )
+            _ds = create_timeseries_of_masked_datasets(
+                ds=single_time_ds,
+                masks=masks,
+                shape_dimension=shape_dimension,
+                lat_dim=lat_dim,
+                lon_dim=lon_dim,
+                use_pbar=False,
+            )
+            # expand the time dimension -> (time, station_id)
+            if single_time_ds.time.size == 1:
+                _ds = _ds.expand_dims("time")
+
+            all_times.append(_ds)
+
+        print(f"Concatenating all times for variable: {var}")
+        ds = xr.concat(all_times, dim="time")
+        ds.to_netcdf(data_dir / f"{var.lower()}_cwatm.nc")

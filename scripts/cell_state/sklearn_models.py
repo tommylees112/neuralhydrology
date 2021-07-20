@@ -27,7 +27,7 @@ def init_linear_model(kwargs: Dict = {}):
         early_stopping=True,
         verbose=1,
     )
-    
+
     if kwargs != {}:
         for new_key, new_val in kwargs.items():
             _kwargs.update({new_key: new_val})
@@ -53,7 +53,6 @@ def init_nonlinear_model(
     if kwargs != {}:
         for new_key, new_val in kwargs.items():
             _kwargs.update({new_key: new_val})
-
 
     model = MLPRegressor(
         hidden_layer_sizes=hidden_sizes, activation=activation, **_kwargs
@@ -119,16 +118,18 @@ def evaluate(
     return preds, errors
 
 
-def fit_and_predict(train: Dict[str, np.ndarray], test: Dict[str, np.ndarray], random_seed: int = 100) -> Tuple[Any, xr.Dataset, xr.Dataset]:
+def fit_and_predict(
+    train: Dict[str, np.ndarray], test: Dict[str, np.ndarray], random_seed: int = 100
+) -> Tuple[Any, xr.Dataset, xr.Dataset]:
     np.random.seed(random_seed)
-    
+
     # intiialise and fit the model
     model = init_linear_model()
     model.fit(train["X"], train["y"].ravel())
 
-    # make predictions from the fitted model 
+    #  make predictions from the fitted model
     preds, errors = evaluate(model, test)
-    
+
     return model, preds, errors
 
 

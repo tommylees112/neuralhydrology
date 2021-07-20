@@ -71,17 +71,45 @@ def create_timeseries_of_masked_datasets(
     shape_dimension: str = "station_id",
     lat_dim: str = "lat",
     lon_dim: str = "lon",
+    use_pbar: bool = True,
 ) -> xr.Dataset:
     all_mean_datasets = []
-    pbar = tqdm(masks[shape_dimension].values, desc="Chopping ROI: ")
 
-    #  iterate over each mask calculating the mean pixel values in polygon
-    for object_id in pbar:
-        pbar.set_postfix_str(f"{object_id}")
+    def _one_shape_mean(
+        masks: xr.Dataset,
+        object_id: str,
+        shape_dimension: str,
+        lat_dim: str,
+        lon_dim: str,
+    ) -> xr.Dataset:
         mask = masks.sel({shape_dimension: object_id})
         mean_object = ds.where(mask).mean(dim=[lat_dim, lon_dim])
         mean_object = mean_object.expand_dims(shape_dimension)
-        all_mean_datasets.append(mean_object)
+        return mean_object
+
+    if use_pbar:
+        pbar = tqdm(masks[shape_dimension].values, desc="Chopping ROI: ")
+        #  iterate over each mask calculating the mean pixel values in polygon
+        for object_id in pbar:
+            pbar.set_postfix_str(f"{object_id}")
+            mean_object = _one_shape_mean(
+                masks=masks,
+                object_id=object_id,
+                shape_dimension=shape_dimension,
+                lat_dim=lat_dim,
+                lon_dim=lon_dim,
+            )
+            all_mean_datasets.append(mean_object)
+    else:
+        for object_id in masks[shape_dimension].values:
+            mean_object = _one_shape_mean(
+                masks=masks,
+                object_id=object_id,
+                shape_dimension=shape_dimension,
+                lat_dim=lat_dim,
+                lon_dim=lon_dim,
+            )
+            all_mean_datasets.append(mean_object)
 
     out_ds = xr.concat(all_mean_datasets, dim=shape_dimension)
     return out_ds

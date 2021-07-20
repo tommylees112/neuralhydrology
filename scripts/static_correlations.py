@@ -1,5 +1,5 @@
 from typing import List
-import pandas as pd 
+import pandas as pd
 import xarray as xr
 import numpy as np
 from pathlib import Path
@@ -43,17 +43,19 @@ def calc_MI(x, y, n_bins):
     return mi
 
 
-def calculate_correlation_with_static_features(metric_values: pd.Series, static_df: pd.DataFrame, method: str = "spearman") -> pd.DataFrame:
+def calculate_correlation_with_static_features(
+    metric_values: pd.Series, static_df: pd.DataFrame, method: str = "spearman"
+) -> pd.DataFrame:
     func_lookup = {
         "kendall": kendalltau,
         "spearman": spearmanr,
         "mutual_information": calc_MI,
     }
     out = defaultdict(list)
-    
+
     static_df = static_df.loc[metric_values.index]
     assert all(static_df.index == metric_values.index)
-    
+
     for feature in static_df.columns:
         result = func_lookup[method](metric_values, static_df[feature])
         out["correlation"].append(result.correlation)
@@ -65,14 +67,16 @@ def calculate_correlation_with_static_features(metric_values: pd.Series, static_
 
 
 def calculate_correlations(
-    static_df: pd.DataFrame, 
+    static_df: pd.DataFrame,
     catchment_averaged_var: pd.Series,
     model: str = "LSTM",
     method: str = "spearman",
 ):
-    ## Calculate correlations 
+    ## Calculate correlations
     # for variance_metric
-    corr_df = calculate_correlation_with_static_features(catchment_averaged_var, static_df, method=method)
+    corr_df = calculate_correlation_with_static_features(
+        catchment_averaged_var, static_df, method=method
+    )
     corr_df["model"] = model
     return corr_df
 
@@ -86,7 +90,9 @@ def calculate_multi_model_correlations(
     corr_df = calculate_correlations(static_df, all_catchment_vars[0], method=method)
     for ix, model in enumerate(models):
         if ix != 0:
-            _corr_df = calculate_correlations(static_df, all_catchment_vars[ix], method=method)
+            _corr_df = calculate_correlations(
+                static_df, all_catchment_vars[ix], method=method
+            )
             _corr_df["model"] = model
             corr_df = pd.concat([corr_df, _corr_df])
 
@@ -94,7 +100,7 @@ def calculate_multi_model_correlations(
 
 
 def corr_df_ready_for_plotting(
-    corr_df: pd.DataFrame, 
+    corr_df: pd.DataFrame,
     models: List[str] = ["LSTM", "EALSTM", "TOPMODEL", "SACRAMENTO", "ARNOVIC", "PRMS"],
     important_features: List[str] = IMP_FEATURES,
 ) -> pd.DataFrame:
@@ -102,8 +108,8 @@ def corr_df_ready_for_plotting(
     corr_df["significant"] = corr_df["pvalue"] < 0.001
     corr_df["positive"] = corr_df["correlation"] > 0
 
-    # Sort Model columns for plotting
-    model_sorter = models 
+    #  Sort Model columns for plotting
+    model_sorter = models
     variable_sorter = important_features
 
     corr_df["model"] = corr_df["model"].astype("category")
@@ -124,30 +130,36 @@ if __name__ == "__main__":
     ealstm_run_dir = olddata_dir / "runs/ensemble_ealstm_TEMP"
 
     # static data
-    all_static = xr.open_dataset(olddata_dir / f'RUNOFF/interim/static/data.nc')
-    all_static['station_id'] = all_static['station_id'].astype(int)
+    all_static = xr.open_dataset(olddata_dir / f"RUNOFF/interim/static/data.nc")
+    all_static["station_id"] = all_static["station_id"].astype(int)
     static = all_static
 
-    # model errors 
+    # model errors
     ensemble_fp = run_dir / "ensemble_all.nc"
     ensemble_ds = xr.open_dataset(ensemble_fp)
-    # ea lstm
+    #  ea lstm
     ealstm_ensemble_fp = ealstm_run_dir / "ensemble_all.nc"
     ealstm_ensemble_ds = xr.open_dataset(ealstm_ensemble_fp)
 
-    std_norm_q = (ensemble_ds.drop("obs").std(dim="member")/ static.q_mean).mean(dim="time") .to_dataframe()
-    ealstm_std_norm_q = (ensemble_ds.drop("obs").std(dim="member") / static.q_mean).mean(dim="time").to_dataframe()
-
+    std_norm_q = (
+        (ensemble_ds.drop("obs").std(dim="member") / static.q_mean)
+        .mean(dim="time")
+        .to_dataframe()
+    )
+    ealstm_std_norm_q = (
+        (ensemble_ds.drop("obs").std(dim="member") / static.q_mean)
+        .mean(dim="time")
+        .to_dataframe()
+    )
 
     important_features = IMP_FEATURES
     static_df = static[important_features].to_dataframe()
 
-    # calculate correlations 
+    #  calculate correlations
     corr_df = calculate_multi_model_correlations(
-        all_catchment_vars=[std_norm_q, ealstm_std_norm_q], 
-        models=["LSTM", "EALSTM"],
+        all_catchment_vars=[std_norm_q, ealstm_std_norm_q], models=["LSTM", "EALSTM"],
     )
 
-    # set dataframe ready for plotting
+    #  set dataframe ready for plotting
     corr_df = corr_df_ready_for_plotting(corr_df)
     assert False
