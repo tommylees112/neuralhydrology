@@ -117,7 +117,14 @@ def select_catchment_average_from_gridded_cwatm_output(
     lat_dim: str = "y",
     lon_dim: str = "x",
 ) -> xr.Dataset:
-    masks = _rasterize_shapefile(input_ds=cwatm_data, shp_filepath=shp_filepath)
+    masks = _rasterize_shapefile(
+        input_ds=cwatm_data,
+        shp_filepath=shp_filepath,
+        id_column=id_column,
+        shape_dimension=shape_dimension,
+        lat_dim=lat_dim,
+        lon_dim=lon_dim,
+    )
 
     # for each timestep extract the mean station_id values for every catchment
     pbar = tqdm(cwatm_data["time"].values, desc="Create Mean of Masked Area")
@@ -157,36 +164,41 @@ if __name__ == "__main__":
     }
     target_file = cwat_dir / "discharge_daily.nc"
     assert all([f.exists() for f in list(input_files.values()) + [target_file]])
+    TARGET = False
+    INPUT = False
 
     # target data (DISCHARGE AT A POUR POINT)
-    target = xr.open_dataset(target_file)
-    target = initalise_rio_geospatial(target[["discharge"]], crs="epsg:3035")
-    static = xr.open_dataset(data_dir / "static.nc")
-    gauge_latlons = static[["gauge_lat", "gauge_lon"]].to_dataframe()
+    if TARGET:
+        target = xr.open_dataset(target_file)
+        target = initalise_rio_geospatial(target[["discharge"]], crs="epsg:3035")
+        static = xr.open_dataset(data_dir / "static.nc")
+        gauge_latlons = static[["gauge_lat", "gauge_lon"]].to_dataframe()
 
-    #  1. reproject gridded cwatm to latlon
-    #  2. get gauge lat lon
-    #  3. select gauge from gridded cwatm
-    sid_ds = select_point_data_from_gridded_cwatm_output(
-        cwatm_ds=target, gauge_latlons=gauge_latlons
-    )
-    sid_ds.to_netcdf(data_dir / "cwatm_discharge.nc")
+        #  1. reproject gridded cwatm to latlon
+        #  2. get gauge lat lon
+        #  3. select gauge from gridded cwatm
+        sid_ds = select_point_data_from_gridded_cwatm_output(
+            cwatm_ds=target, gauge_latlons=gauge_latlons
+        )
+        sid_ds.to_netcdf(data_dir / "cwatm_discharge.nc")
 
     #  input data (mean over catchment area - "lumped")
-    # 1. reproject gridded cwatm to latlon
-    #  2. get catchment shapefiles
-    # 3. calculate shapefile means over catchment area
-    # for var, filepath in input_files.items():
-    for var, filepath in [("Tavg", cwat_dir / "Tavg_daily.nc")]:
+    if INPUT:
+        # for var, filepath in [("Tavg", cwat_dir / "Tavg_daily.nc")]:
         # for var, filepath in [("Precipitation", cwat_dir / "Precipitation_daily.nc")]:
-        input_ds = xr.open_dataset(filepath).drop("lambert_azimuthal_equal_area")
-        input_ds = initalise_rio_geospatial(input_ds[[var]], crs="epsg:3035")
-        shp_data_dir = data_dir / "CAMELS_GB_DATASET"
-        shp_filepath = (
-            shp_data_dir / "Catchment_Boundaries/CAMELS_GB_catchment_boundaries.shp"
-        )
+        for var, filepath in input_files.items():
+            # load in the gridded input data
+            input_ds = xr.open_dataset(filepath).drop("lambert_azimuthal_equal_area")
+            input_ds = initalise_rio_geospatial(input_ds[[var]], crs="epsg:3035")
+            shp_data_dir = data_dir / "CAMELS_GB_DATASET"
+            shp_filepath = (
+                shp_data_dir / "Catchment_Boundaries/CAMELS_GB_catchment_boundaries.shp"
+            )
 
-        ds = select_catchment_average_from_gridded_cwatm_output(
-            cwatm_data=input_ds, shp_filepath=shp_filepath
-        )
-        ds.to_netcdf(data_dir / f"{var.lower()}_cwatm.nc")
+            #  1. reproject gridded cwatm to latlon
+            #  2. get catchment shapefiles
+            #  3. calculate shapefile means over catchment area
+            ds = select_catchment_average_from_gridded_cwatm_output(
+                cwatm_data=input_ds, shp_filepath=shp_filepath
+            )
+            ds.to_netcdf(data_dir / f"{var.lower()}_cwatm.nc")
